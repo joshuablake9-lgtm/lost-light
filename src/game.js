@@ -117,7 +117,7 @@
       this.npcs = [];
     }
 
-    text(x, y, value, size = 6, color = "#ffefc1", origin = 0) {
+    text(x, y, value, size = 7, color = "#ffefc1", origin = 0) {
       return this.add.text(x, y, value, {
         fontFamily: '"Courier New", monospace',
         fontSize: size + "px",
@@ -143,11 +143,11 @@
 
       this.text(80, 20, "LOST LIGHT", 14, "#ffd166", 0.5)
         .setShadow(2, 2, "#8b3a3a", 0, false, true);
-      this.text(80, 38, "A TALE OF THE LANTERN COAST", 5, "#b7d1b0", 0.5);
+      this.text(80, 38, "A TALE OF THE LANTERN COAST", 6, "#b7d1b0", 0.5);
       this.text(80, 104, this.save.className ? "CONTINUE" : "NEW GAME", 7, "#fff7d6", 0.5);
-      this.text(80, 118, "PRESS Z OR ENTER", 5, "#e6b85c", 0.5);
+      this.text(80, 118, "PRESS Z OR ENTER", 6, "#e6b85c", 0.5);
       if (this.save.className) {
-        this.text(80, 128, "R: ERASE SAVE", 4, "#89a39a", 0.5);
+        this.text(80, 128, "R: ERASE SAVE", 5, "#89a39a", 0.5);
       }
       this.tweens.add({
         targets: this.children.list[this.children.list.length - (this.save.className ? 2 : 1)],
@@ -211,7 +211,7 @@
       }
 
       this.drawFurniture(g);
-      this.text(80, 4, "LOST LIGHT INN · MORNING", 5, "#ffefc1", 0.5);
+      this.text(80, 4, "LOST LIGHT INN · MORNING", 6, "#ffefc1", 0.5);
 
       this.hero = this.add.sprite(this.heroTile.x * TILE + 4, this.heroTile.y * TILE + 2, "hero")
         .setDepth(10);
@@ -277,12 +277,12 @@
       if (this.dialogueHint) this.dialogueHint.destroy();
 
       this.dialoguePanel = this.add.graphics().setDepth(50);
-      this.dialoguePanel.fillStyle(COLORS.cream).fillRect(4, 102, 152, 38);
-      this.dialoguePanel.fillStyle(COLORS.ink).fillRect(7, 105, 146, 32);
-      this.dialoguePanel.lineStyle(1, COLORS.gold).strokeRect(6, 104, 148, 34);
-      this.dialogueText = this.text(11, 109, this.wrap(this.dialogue[this.dialogueIndex], 39), 5, "#fff7d6")
+      this.dialoguePanel.fillStyle(COLORS.cream).fillRect(3, 86, 154, 55);
+      this.dialoguePanel.fillStyle(COLORS.ink).fillRect(6, 89, 148, 49);
+      this.dialoguePanel.lineStyle(1, COLORS.gold).strokeRect(5, 88, 150, 51);
+      this.dialogueText = this.text(10, 94, this.wrap(this.dialogue[this.dialogueIndex], 31), 7, "#fff7d6")
         .setDepth(51);
-      this.dialogueHint = this.text(149, 132, "▼", 5, "#ffd166", 1).setDepth(51);
+      this.dialogueHint = this.text(149, 130, "▼", 7, "#ffd166", 1).setDepth(51);
     }
 
     closeDialogue() {
@@ -359,8 +359,8 @@
       this.choicePanel.fillStyle(COLORS.cream).fillRect(24, 45, 112, 50);
       this.choicePanel.fillStyle(COLORS.ink).fillRect(27, 48, 106, 44);
       this.text(80, 54, npc.className.toUpperCase(), 8, "#ffd166", 0.5).setData("choice", true);
-      this.text(80, 68, npc.boon, 5, "#fff7d6", 0.5).setData("choice", true);
-      this.text(80, 83, "Z ACCEPT · X DECLINE", 4, "#b7d1b0", 0.5).setData("choice", true);
+      this.text(80, 68, npc.boon, 6, "#fff7d6", 0.5).setData("choice", true);
+      this.text(80, 83, "Z ACCEPT · X DECLINE", 5, "#b7d1b0", 0.5).setData("choice", true);
     }
 
     clearChoice() {
