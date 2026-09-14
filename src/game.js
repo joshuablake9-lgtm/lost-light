@@ -212,6 +212,8 @@
     showTitle() {
       this.clearScene();
       this.scale.resize(TITLE_WIDTH, TITLE_HEIGHT);
+      this.cameras.main.setSize(TITLE_WIDTH, TITLE_HEIGHT);
+      this.cameras.main.setViewport(0, 0, TITLE_WIDTH, TITLE_HEIGHT);
       this.cameras.main.setBounds(0, 0, TITLE_WIDTH, TITLE_HEIGHT);
       this.mode = "title";
 
@@ -282,6 +284,9 @@
 
     startGame() {
       this.scale.resize(WIDTH, HEIGHT);
+      this.cameras.main.setSize(WIDTH, HEIGHT);
+      this.cameras.main.setViewport(0, 0, WIDTH, HEIGHT);
+      this.cameras.main.setScroll(0, 0);
       this.cameras.main.setBounds(0, 0, WIDTH, HEIGHT);
       if (this.save.className) {
         this.buildInn();
