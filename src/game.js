@@ -1,11 +1,11 @@
 (() => {
   "use strict";
 
-  const WIDTH = 320;
-  const HEIGHT = 288;
-  const TITLE_WIDTH = 640;
-  const TITLE_HEIGHT = 576;
-  const TILE = 32;
+  const WIDTH = 480;
+  const HEIGHT = 432;
+  const TITLE_WIDTH = 960;
+  const TITLE_HEIGHT = 864;
+  const TILE = 48;
   const MAP_WIDTH = 20 * TILE;
   const MAP_HEIGHT = 15 * TILE;
   const SAVE_KEY = "lost-light-save-v1";
@@ -137,7 +137,7 @@
     }
 
     text(x, y, value, size = 7, color = "#ffefc1", origin = 0) {
-      const renderScale = 2;
+      const renderScale = 3;
       return this.add.text(x * renderScale, y * renderScale, value, {
 
         fontFamily: 'Silkscreen, monospace',
@@ -196,7 +196,7 @@
       bg.lineBetween(246, 78, 246, 126);
       bg.lineBetween(231, 101, 262, 101);
 
-      bg.setScale(2);
+      bg.setScale(3);
 
       // Stars.
       bg.fillStyle(0xffefc1);
@@ -280,11 +280,11 @@
       this.drawFurniture(g);
       this.text(80, 4, "LOST LIGHT INN · MORNING", 6, "#ffefc1", 0.5);
 
-      this.hero = this.add.sprite(this.heroTile.x * TILE + 16, this.heroTile.y * TILE + 8, "hero")
-        .setDepth(10).setScale(2);
+      this.hero = this.add.sprite(this.heroTile.x * TILE + 24, this.heroTile.y * TILE + 12, "hero")
+        .setDepth(10).setScale(3);
 
       this.npcs = MENTORS.map(m => {
-        const sprite = this.add.sprite(m.x * TILE + 16, m.y * TILE + 8, m.id).setDepth(9).setScale(2);
+        const sprite = this.add.sprite(m.x * TILE + 24, m.y * TILE + 12, m.id).setDepth(9).setScale(3);
         this.blocked.add(m.x + "," + m.y);
         return { ...m, sprite };
       });
@@ -294,14 +294,14 @@
         intro: this.save.className
           ? ["MARA: There you are, birthday boy.", "Your breakfast is getting cold.", "Go on. Everyone has something to say before the celebration."]
           : ["MARA: Happy birthday.", "Everyone who helped raise you came early.", "Speak with them. Today you decide what path you'll walk."],
-        sprite: this.add.sprite(9 * TILE + 16, 4 * TILE + 8, "fighter").setTint(0xc99157).setDepth(9).setScale(2)
+        sprite: this.add.sprite(9 * TILE + 24, 4 * TILE + 12, "fighter").setTint(0xc99157).setDepth(9).setScale(3)
       };
       this.npcs.push(innkeeper);
       this.blocked.add("9,4");
 
       this.cameras.main.setBounds(0, 0, MAP_WIDTH, MAP_HEIGHT);
       this.cameras.main.startFollow(this.hero, true, 0.18, 0.18);
-      this.cameras.main.setDeadzone(80, 64);
+      this.cameras.main.setDeadzone(120, 96);
 
       this.text(4, 127, this.save.className ? "CLASS: " + this.save.className.toUpperCase() : "CHOOSE YOUR PATH", 5, "#ffd166");
       this.text(156, 127, "Z: TALK", 5, "#d7dfc4", 1);
@@ -331,7 +331,7 @@
       rect(14, 12, 3, 1);
       rect(8, 8, 2, 1);
       g.fillStyle(COLORS.gold).fillRect(8 * TILE, 8 * TILE, 2 * TILE, TILE);
-      this.add.sprite(9 * TILE, 8 * TILE + 16, "flame").setDepth(3).setScale(2);
+      this.add.sprite(9 * TILE, 8 * TILE + 24, "flame").setDepth(3).setScale(3);
     }
 
     openDialogue(lines, done = null) {
@@ -347,11 +347,11 @@
       if (this.dialogueText) this.dialogueText.destroy();
       if (this.dialogueHint) this.dialogueHint.destroy();
 
-      this.dialoguePanel = this.add.graphics().setDepth(50).setScrollFactor(0).setScale(2);
+      this.dialoguePanel = this.add.graphics().setDepth(50).setScrollFactor(0).setScale(3);
       this.dialoguePanel.fillStyle(COLORS.cream).fillRect(3, 86, 154, 55);
       this.dialoguePanel.fillStyle(COLORS.ink).fillRect(6, 89, 148, 49);
       this.dialoguePanel.lineStyle(1, COLORS.gold).strokeRect(5, 88, 150, 51);
-      this.dialogueText = this.text(10, 94, this.wrap(this.dialogue[this.dialogueIndex], 31), 7, "#fff7d6")
+      this.dialogueText = this.text(10, 94, this.wrap(this.dialogue[this.dialogueIndex], 24), 7, "#fff7d6")
         .setDepth(51);
       this.dialogueHint = this.text(149, 130, "▼", 7, "#ffd166", 1).setDepth(51);
     }
@@ -426,11 +426,11 @@
     }
 
     showChoice(npc) {
-      this.choicePanel = this.add.graphics().setDepth(55).setScrollFactor(0).setScale(2);
+      this.choicePanel = this.add.graphics().setDepth(55).setScrollFactor(0).setScale(3);
       this.choicePanel.fillStyle(COLORS.cream).fillRect(24, 45, 112, 50);
       this.choicePanel.fillStyle(COLORS.ink).fillRect(27, 48, 106, 44);
       this.text(80, 54, npc.className.toUpperCase(), 8, "#ffd166", 0.5).setData("choice", true);
-      this.text(80, 68, npc.boon, 6, "#fff7d6", 0.5).setData("choice", true);
+      this.text(80, 68, this.wrap(npc.boon, 24), 6, "#fff7d6", 0.5).setData("choice", true);
       this.text(80, 83, "Z ACCEPT · X DECLINE", 5, "#b7d1b0", 0.5).setData("choice", true);
     }
 
@@ -468,8 +468,8 @@
       this.busy = true;
       this.tweens.add({
         targets: this.hero,
-        x: nx * TILE + 16,
-        y: ny * TILE + 8,
+        x: nx * TILE + 24,
+        y: ny * TILE + 12,
         duration: 90,
         onComplete: () => { this.busy = false; }
       });
@@ -512,7 +512,7 @@
 
   document.fonts.ready.then(() => new Phaser.Game({
     type: Phaser.AUTO,
-    resolution: Math.min(Math.max(window.devicePixelRatio || 1, 2), 4),
+    resolution: Math.min(Math.max(window.devicePixelRatio || 1, 1.5), 3),
     antialias: false,
     antialiasGL: false,
     powerPreference: "high-performance",
