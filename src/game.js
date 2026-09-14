@@ -136,7 +136,7 @@
 
     text(x, y, value, size = 7, color = "#ffefc1", origin = 0) {
       return this.add.text(x, y, value, {
-        fontFamily: '"Courier New", monospace',
+        fontFamily: 'Silkscreen, monospace',
         fontSize: size + "px",
         fontStyle: "bold",
         color,
