@@ -312,8 +312,48 @@
 
       const g = this.add.graphics();
       g.fillStyle(COLORS.deep).fillRect(0, 0, MAP_WIDTH, MAP_HEIGHT);
+      // Hand-detailed plank floor with seams, highlights and deterministic knots.
       for (let y = 2; y < 15; y++) {
         for (let x = 1; x < 19; x++) {
+          const px = x * TILE;
+          const py = y * TILE;
+          const plank = (x + y) % 3 === 0 ? 0xb87949 : ((x + y) % 2 ? COLORS.floorA : COLORS.floorB);
+          g.fillStyle(plank).fillRect(px, py, TILE, TILE);
+          g.fillStyle(0x8d593d).fillRect(px, py + TILE - 3, TILE, 3);
+          g.fillStyle(0xd9a566, 0.65).fillRect(px + 4, py + 5, TILE - 8, 2);
+          g.fillStyle(0x9b623f, 0.7).fillRect(px + 10, py + 19, TILE - 16, 2);
+          if ((x * 7 + y * 11) % 5 === 0) {
+            g.fillStyle(0x704536).fillEllipse(px + 31, py + 29, 7, 4);
+            g.fillStyle(0xc38751).fillEllipse(px + 31, py + 29, 3, 2);
+          }
+          if (x % 2 === 0) g.fillStyle(0x865239).fillRect(px, py + 23, 4, 2);
+        }
+      }
+
+      // Heavy timber frame with inset stone and carved braces.
+      g.fillStyle(0x392b32).fillRect(TILE, 2 * TILE - 10, 18 * TILE, 18);
+      g.fillStyle(COLORS.timber);
+      g.fillRect(TILE, 2 * TILE, 18 * TILE, 8);
+      g.fillRect(TILE, 15 * TILE - 8, 18 * TILE, 8);
+      g.fillRect(TILE, 2 * TILE, 8, 13 * TILE);
+      g.fillRect(19 * TILE - 8, 2 * TILE, 8, 13 * TILE);
+      for (let x = 1; x < 19; x += 3) {
+        g.fillStyle(0x5e372f).fillRect(x * TILE, 2 * TILE - 10, 7, 24);
+        g.fillStyle(0xb07146).fillRect(x * TILE + 7, 2 * TILE - 8, 3, 21);
+      }
+
+      // Leaded windows throwing cool morning light.
+      [4, 14].forEach(x => {
+        const px = x * TILE;
+        g.fillStyle(0x2a2530).fillRect(px, 2 * TILE + 7, TILE, 31);
+        g.fillStyle(0x79a9ad).fillRect(px + 5, 2 * TILE + 11, TILE - 10, 22);
+        g.fillStyle(0xc5ddd0, 0.55).fillRect(px + 9, 2 * TILE + 13, 7, 18);
+        g.fillStyle(0x2a2530).fillRect(px + 23, 2 * TILE + 10, 3, 24);
+        g.fillStyle(0x2a2530).fillRect(px + 5, 2 * TILE + 21, TILE - 10, 3);
+        g.fillStyle(0xe5d290, 0.12).fillTriangle(px + 5, 2 * TILE + 34, px + TILE - 5, 2 * TILE + 34, px + TILE + 28, 5 * TILE);
+      });
+
+      for (let x = 1; x < 19; x++) {
           g.fillStyle((x + y) % 2 ? COLORS.floorA : COLORS.floorB);
           g.fillRect(x * TILE, y * TILE, TILE, TILE);
         }
@@ -375,20 +415,90 @@
     }
 
     drawFurniture(g) {
-      const rect = (x, y, w, h, color = COLORS.timber) => {
-        g.fillStyle(color).fillRect(x * TILE, y * TILE, w * TILE, h * TILE);
+      const T = TILE;
+      const block = (x, y, w, h) => {
         for (let yy = y; yy < y + h; yy++) {
           for (let xx = x; xx < x + w; xx++) this.blocked.add(xx + "," + yy);
         }
       };
-      rect(3, 3, 4, 1);
-      rect(12, 3, 4, 1);
-      rect(8, 3, 3, 1, 0x6e3e32);
-      rect(3, 8, 3, 2);
-      rect(14, 12, 3, 1);
-      rect(8, 8, 2, 1);
-      g.fillStyle(COLORS.gold).fillRect(8 * TILE, 8 * TILE, 2 * TILE, TILE);
-      this.add.sprite(9 * TILE, 8 * TILE + 24, "flame").setDepth(3).setScale(3);
+      const woodObject = (x, y, w, h, top = 0x8f553b) => {
+        const px = x * T, py = y * T, pw = w * T, ph = h * T;
+        g.fillStyle(0x2b2730, 0.35).fillRect(px + 7, py + 9, pw, ph);
+        g.fillStyle(0x3c2b2d).fillRect(px, py, pw, ph);
+        g.fillStyle(top).fillRect(px + 4, py + 4, pw - 8, ph - 8);
+        g.fillStyle(0xc18452).fillRect(px + 7, py + 7, pw - 14, 3);
+        g.lineStyle(3, 0x5d382f).strokeRect(px + 4, py + 4, pw - 8, ph - 8);
+        block(x, y, w, h);
+      };
+
+      // Large woven rug anchors the room without affecting collision.
+      g.fillStyle(0x2c2730, 0.3).fillRect(7 * T + 8, 6 * T + 10, 6 * T, 5 * T);
+      g.fillStyle(0x315b62).fillRect(7 * T, 6 * T, 6 * T, 5 * T);
+      g.fillStyle(0xd2a85c).fillRect(7 * T + 8, 6 * T + 8, 6 * T - 16, 5 * T - 16);
+      g.fillStyle(0x8a3f46).fillRect(7 * T + 14, 6 * T + 14, 6 * T - 28, 5 * T - 28);
+      g.lineStyle(5, 0x27464e).strokeRect(7 * T + 20, 6 * T + 20, 6 * T - 40, 5 * T - 40);
+
+      // Guest beds with quilts and pillows.
+      [[3,3,0x477b9d],[13,3,0xa84b4b]].forEach(([x,y,quilt]) => {
+        woodObject(x, y, 3, 1, 0x704536);
+        g.fillStyle(0xeee1bb).fillRect(x*T + 8, y*T + 8, 34, T - 16);
+        g.fillStyle(quilt).fillRect(x*T + 44, y*T + 8, 3*T - 54, T - 16);
+        g.fillStyle(0xd5bc7e).fillRect(x*T + 48, y*T + 15, 3*T - 63, 5);
+      });
+
+      // Polished bar, mugs, bottles and shelves.
+      woodObject(7, 3, 4, 1, 0x6e3e32);
+      g.fillStyle(0xe0c47d).fillRect(7*T + 13, 3*T - 8, 13, 18).fillRect(7*T + 16, 3*T - 12, 7, 5);
+      g.fillStyle(0x4f846c).fillRect(8*T + 13, 3*T - 16, 9, 24);
+      g.fillStyle(0xa84b4b).fillRect(9*T + 18, 3*T - 12, 8, 20);
+      g.fillStyle(0x6e90b2).fillRect(10*T + 9, 3*T - 19, 8, 27);
+
+      // Dining tables with plates, bread and candles.
+      woodObject(3, 8, 3, 2);
+      g.fillStyle(0xeee1bb).fillEllipse(3*T + 35, 8*T + 35, 24, 13).fillEllipse(5*T + 7, 9*T + 22, 24, 13);
+      g.fillStyle(0xd7a554).fillEllipse(4*T + 17, 8*T + 23, 24, 13);
+      g.fillStyle(0xffd166).fillRect(4*T + 66, 8*T + 8, 7, 25);
+      g.fillStyle(0xfff3c4).fillRect(4*T + 67, 8*T + 1, 5, 10);
+
+      woodObject(14, 11, 3, 2);
+      g.fillStyle(0xeee1bb).fillEllipse(14*T + 31, 11*T + 28, 22, 12).fillEllipse(16*T + 10, 12*T + 20, 22, 12);
+      g.fillStyle(0x4f846c).fillRect(15*T + 11, 11*T + 11, 17, 20);
+
+      // Stone hearth with mantle, iron grate and layered glow.
+      block(8, 8, 2, 1);
+      g.fillStyle(0x2b2730, 0.3).fillRect(8*T + 8, 8*T + 11, 2*T, T);
+      g.fillStyle(0x6c6865).fillRect(8*T, 8*T, 2*T, T);
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 5; col++) {
+          g.fillStyle((row + col) % 2 ? 0x817b70 : 0x595b5b);
+          g.fillRect(8*T + col*19 + (row%2)*7, 8*T + row*15, 17, 12);
+        }
+      }
+      g.fillStyle(0x262531).fillRect(8*T + 23, 8*T + 16, 2*T - 46, T - 16);
+      g.fillStyle(0xd96b43, 0.28).fillCircle(9*T, 8*T + 28, 34);
+      this.add.sprite(9*T, 8*T + 24, "flame").setDepth(3).setScale(3);
+
+      // Wall shelf, books and crockery.
+      woodObject(17, 5, 1, 3, 0x684333);
+      [0,1,2].forEach(row => {
+        g.fillStyle(0x312b32).fillRect(17*T + 6, (5+row)*T + 12, T - 12, 5);
+        g.fillStyle(row===0 ? 0x477b9d : (row===1 ? 0xa84b4b : 0x5f8b62));
+        g.fillRect(17*T + 10, (5+row)*T + 20, 8, 20).fillRect(17*T + 21, (5+row)*T + 16, 7, 24);
+        g.fillStyle(0xe6b85c).fillRect(17*T + 32, (5+row)*T + 23, 8, 17);
+      });
+
+      // Barrels in the darker corners.
+      [[2,11],[17,12]].forEach(([x,y]) => {
+        block(x,y,1,1);
+        g.fillStyle(0x33282b).fillEllipse(x*T + 24, y*T + 26, 42, 46);
+        g.fillStyle(0x815037).fillRect(x*T + 6, y*T + 8, T - 12, T - 14);
+        g.fillStyle(0x34313a).fillRect(x*T + 5, y*T + 14, T - 10, 5).fillRect(x*T + 5, y*T + 34, T - 10, 5);
+        g.fillStyle(0xb47748).fillRect(x*T + 12, y*T + 10, 3, T - 18);
+      });
+
+      // Potted herbs beside the hearth.
+      g.fillStyle(0x704536).fillRect(10*T + 8, 8*T + 24, 30, 20);
+      g.fillStyle(0x477044).fillCircle(10*T + 13, 8*T + 20, 10).fillCircle(10*T + 29, 8*T + 16, 12);
     }
 
     openDialogue(lines, done = null) {
