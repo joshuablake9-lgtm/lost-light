@@ -79,6 +79,11 @@
       this.heroTile = { x: 9, y: 12 };
       this.blocked = new Set();
       this.npcs = [];
+      this.enemies = [];
+      this.area = "";
+      this.objective = "";
+      this.playerHp = 0;
+      this.playerMaxHp = 0;
       this.save = loadSave();
     }
 
@@ -177,6 +182,9 @@
       makePerson("villager-a", 0x7c5b8f, 0x4b302a, "villager");
       makePerson("villager-b", 0x477b9d, 0xb88755, "villager");
       makePerson("villager-c", 0x5f8b62, 0x372d2c, "villager");
+      makePerson("goblin", 0x64734d, 0x26322d, "rogue");
+      makePerson("orc", 0x6f7d55, 0x302b2a, "fighter");
+      makePerson("hobgoblin", 0xa84b4b, 0x20252e, "fighter");
 
       const flame = this.make.graphics({ add: false });
       flame.fillStyle(COLORS.red).fillRect(4, 7, 8, 8);
@@ -194,6 +202,8 @@
       this.dialogue = null;
       this.busy = false;
       this.npcs = [];
+      this.enemies = [];
+      this.hudText = null;
     }
 
     text(x, y, value, size = 7, color = "#ffefc1", origin = 0) {
@@ -289,6 +299,22 @@
       this.cameras.main.setScroll(0, 0);
       this.cameras.main.setBounds(0, 0, WIDTH, HEIGHT);
       if (this.save.className) {
+        if (this.save.gameComplete) {
+          this.showEnding();
+          return;
+        }
+        if (this.save.chapterStage === "castle") {
+          this.buildCastle();
+          return;
+        }
+        if (this.save.chapterStage === "road") {
+          this.buildRoad();
+          return;
+        }
+        if (this.save.chapterStage === "raid") {
+          this.buildRaid();
+          return;
+        }
         this.buildInn();
         this.openDialogue([
           "Morning light spills through the shutters.",
@@ -789,12 +815,26 @@
       const targetY = this.heroTile.y + this.facing.y;
       const npc = this.npcs.find(n => n.x === targetX && n.y === targetY);
       if (!npc) {
-        this.openDialogue(["Nothing here but old floorboards and the smell of breakfast."]);
+        const message = this.enemies && this.enemies.length
+          ? "No enemy is within reach. Face a nearby foe and press Z."
+          : (this.area === "village"
+            ? "You hear gulls, market chatter, and the distant wash of the sea."
+            : "Nothing here but old floorboards and the smell of breakfast.");
+        this.openDialogue([message]);
         return;
       }
 
-      if (npc.id === "innkeeper" || npc.id.startsWith("village-")) {
+      if (npc.id === "innkeeper") {
         this.openDialogue(npc.intro);
+        return;
+      }
+
+      if (npc.id.startsWith("village-")) {
+        this.save.spokenVillagers = this.save.spokenVillagers || [];
+        if (!this.save.spokenVillagers.includes(npc.id)) this.save.spokenVillagers.push(npc.id);
+        saveGame(this.save);
+        const allSpoken = this.save.spokenVillagers.length >= 3 && !this.save.raidStarted;
+        this.openDialogue(npc.intro, allSpoken ? () => this.beginRaid() : null);
         return;
       }
 
@@ -884,8 +924,338 @@
         x: nx * TILE + 24,
         y: ny * TILE + 12,
         duration: 90,
-        onComplete: () => { this.busy = false; }
+        onComplete: () => {
+          this.busy = false;
+          if (this.enemies && this.enemies.length) this.enemyTurn();
+        }
       });
+    }
+
+    getClassStats() {
+      const stats = {
+        Fighter: { hp: 18, damage: 5, armor: 2, skill: "Guard" },
+        Ranger: { hp: 15, damage: 5, armor: 1, skill: "Hunter's Mark" },
+        Rogue: { hp: 14, damage: 6, armor: 1, skill: "Quickstep" },
+        Cleric: { hp: 16, damage: 4, armor: 1, skill: "Healing Light" },
+        Wizard: { hp: 12, damage: 7, armor: 0, skill: "Ember Bolt" }
+      };
+      return stats[this.save.className] || stats.Fighter;
+    }
+
+    prepareCombat(area, heroX, heroY, objective) {
+      this.clearScene();
+      this.mode = "world";
+      this.area = area;
+      this.objective = objective;
+      this.heroTile = { x: heroX, y: heroY };
+      this.facing = { x: 0, y: -1 };
+      this.blocked = new Set();
+      this.enemies = [];
+      const stats = this.getClassStats();
+      this.playerMaxHp = stats.hp;
+      this.playerHp = Math.min(this.save.playerHp || stats.hp, stats.hp);
+    }
+
+    addBoundaries() {
+      for (let x = 0; x < 20; x++) {
+        this.blocked.add(x + ",0");
+        this.blocked.add(x + ",14");
+      }
+      for (let y = 0; y < 15; y++) {
+        this.blocked.add("0," + y);
+        this.blocked.add("19," + y);
+      }
+    }
+
+    createCombatHero() {
+      this.hero = this.add.sprite(this.heroTile.x * TILE + 24, this.heroTile.y * TILE + 12, "hero-up")
+        .setDepth(20).setScale(2);
+      this.cameras.main.setBounds(0, 0, MAP_WIDTH, MAP_HEIGHT);
+      this.cameras.main.startFollow(this.hero, true, 0.18, 0.18);
+      this.cameras.main.setDeadzone(120, 96);
+      this.updateHud();
+    }
+
+    updateHud() {
+      if (this.hudText) this.hudText.destroy();
+      if (!this.enemies || !this.enemies.length) return;
+      const stats = this.getClassStats();
+      this.hudText = this.text(
+        4, 127,
+        "HP " + this.playerHp + "/" + this.playerMaxHp + "  ·  " + stats.skill + "  ·  FOES " + this.enemies.length,
+        5, "#ffefc1"
+      ).setDepth(70);
+    }
+
+    spawnEnemy(id, type, x, y, hp, damage, name) {
+      const enemy = {
+        id, type, x, y, hp, maxHp: hp, damage, name,
+        sprite: this.add.sprite(x * TILE + 24, y * TILE + 12, type + "-down").setDepth(14).setScale(2)
+      };
+      this.enemies.push(enemy);
+      this.blocked.add(x + "," + y);
+      return enemy;
+    }
+
+    attackEnemy(enemy) {
+      if (this.busy) return;
+      this.busy = true;
+      const stats = this.getClassStats();
+      let damage = stats.damage;
+      if (this.save.className === "Rogue" && enemy.hp === enemy.maxHp) damage += 2;
+      if (this.save.className === "Ranger" && this.enemies.length === 1) damage += 1;
+      enemy.hp -= damage;
+      this.cameras.main.shake(80, 0.006);
+      this.tweens.add({
+        targets: enemy.sprite, alpha: 0.25, duration: 55, yoyo: true,
+        onComplete: () => {
+          this.busy = false;
+          if (enemy.hp <= 0) {
+            this.blocked.delete(enemy.x + "," + enemy.y);
+            enemy.sprite.destroy();
+            this.enemies = this.enemies.filter(e => e !== enemy);
+            this.updateHud();
+            if (!this.enemies.length) {
+              this.onCombatCleared();
+              return;
+            }
+          }
+          this.enemyTurn();
+        }
+      });
+    }
+
+    enemyTurn() {
+      if (this.busy || !this.enemies || !this.enemies.length) return;
+      let totalDamage = 0;
+      for (const enemy of this.enemies) {
+        const distance = Math.abs(enemy.x - this.heroTile.x) + Math.abs(enemy.y - this.heroTile.y);
+        if (distance === 1) {
+          totalDamage += enemy.damage;
+          this.tweens.add({ targets: enemy.sprite, scaleX: 2.35, scaleY: 2.35, duration: 55, yoyo: true });
+          continue;
+        }
+        if (distance > 6) continue;
+        const choices = [];
+        const dx = Math.sign(this.heroTile.x - enemy.x);
+        const dy = Math.sign(this.heroTile.y - enemy.y);
+        if (Math.abs(this.heroTile.x - enemy.x) >= Math.abs(this.heroTile.y - enemy.y)) {
+          choices.push([dx,0],[0,dy]);
+        } else choices.push([0,dy],[dx,0]);
+        for (const [mx,my] of choices) {
+          if (!mx && !my) continue;
+          const nx=enemy.x+mx, ny=enemy.y+my, key=nx+","+ny;
+          if (nx === this.heroTile.x && ny === this.heroTile.y) continue;
+          if (!this.blocked.has(key)) {
+            this.blocked.delete(enemy.x + "," + enemy.y);
+            enemy.x=nx; enemy.y=ny; this.blocked.add(key);
+            this.tweens.add({targets:enemy.sprite,x:nx*TILE+24,y:ny*TILE+12,duration:100});
+            break;
+          }
+        }
+      }
+      if (totalDamage) {
+        const armor = this.getClassStats().armor;
+        const dealt = Math.max(1, totalDamage - armor);
+        this.playerHp -= dealt;
+        this.save.playerHp = this.playerHp;
+        saveGame(this.save);
+        this.cameras.main.flash(100, 120, 20, 20);
+        if (this.playerHp <= 0) {
+          this.playerHp = 0;
+          this.updateHud();
+          this.busy = true;
+          this.openDialogue([
+            "Your strength fails and the world goes dark.",
+            "Mara's voice calls you back from the edge.",
+            "You return to the beginning of the battle, restored."
+          ], () => this.restartCombatArea());
+          return;
+        }
+      }
+      this.updateHud();
+    }
+
+    combatTalk() {
+      const tx=this.heroTile.x+this.facing.x, ty=this.heroTile.y+this.facing.y;
+      const enemy=this.enemies.find(e=>e.x===tx&&e.y===ty);
+      if (enemy) {
+        this.attackEnemy(enemy);
+        return true;
+      }
+      return false;
+    }
+
+    beginRaid() {
+      this.save.raidStarted = true;
+      this.save.chapterStage = "raid";
+      this.save.playerHp = this.getClassStats().hp;
+      saveGame(this.save);
+      this.openDialogue([
+        "A horn screams from the eastern field.",
+        "Goblins pour between the houses. Smoke rises above Dunmere.",
+        "MARA: Take up your weapon! Protect the village!"
+      ], () => this.buildRaid());
+    }
+
+    buildRaid() {
+      this.prepareCombat("raid", 9, 11, "Defend Dunmere");
+      const g=this.add.graphics(),T=TILE;
+      for(let y=0;y<15;y++) for(let x=0;x<20;x++) {
+        g.fillStyle((x+y)%2?0x5d784c:0x688654).fillRect(x*T,y*T,T,T);
+        g.fillStyle(0x405e3f,0.7).fillRect(x*T+9,y*T+30,17,3);
+      }
+      for(let y=1;y<14;y++) for(const x of [8,9,10]) {
+        g.fillStyle((x+y)%2?0xa58a62:0xb99b6b).fillRect(x*T,y*T,T,T);
+        g.fillStyle(0x735f4b).fillEllipse(x*T+17,y*T+22,9,5);
+      }
+      const burningHouse=(x,y,w,color)=>{
+        for(let yy=y;yy<y+3;yy++) for(let xx=x;xx<x+w;xx++) this.blocked.add(xx+","+yy);
+        g.fillStyle(0x2d2930,0.4).fillRect(x*T+10,y*T+16,w*T,3*T);
+        g.fillStyle(color).fillRect(x*T,(y+1)*T,w*T,2*T);
+        g.fillStyle(0x493235).fillTriangle(x*T-10,(y+1)*T+8,(x+w/2)*T,y*T-15,(x+w)*T+10,(y+1)*T+8);
+        for(let i=0;i<3;i++) {
+          g.fillStyle(i===0?0xd9503f:(i===1?0xf28b45:0xffd166),0.9);
+          g.fillTriangle((x+1)*T+i*22,(y+1)*T+12,(x+1)*T+15+i*22,y*T-12,(x+1)*T+29+i*22,(y+1)*T+12);
+        }
+      };
+      burningHouse(2,1,5,0x95664c);
+      burningHouse(13,1,5,0xa57c55);
+      burningHouse(14,10,4,0x8b674e);
+      this.addBoundaries();
+      [[5,6],[15,6],[6,10],[13,9]].forEach(([x,y],i)=>this.spawnEnemy("raid-"+i,"goblin",x,y,7,2,"Ashfang Goblin"));
+      this.createCombatHero();
+      this.openDialogue(["Defend Dunmere! Face an enemy and press Z to attack."]);
+    }
+
+    buildRoad() {
+      this.prepareCombat("road", 2, 12, "Follow the raiders");
+      this.save.chapterStage="road"; this.save.playerHp=this.getClassStats().hp; saveGame(this.save);
+      this.playerHp=this.playerMaxHp;
+      const g=this.add.graphics(),T=TILE;
+      for(let y=0;y<15;y++) for(let x=0;x<20;x++) {
+        g.fillStyle((x*3+y)%2?0x3e6746:0x47734b).fillRect(x*T,y*T,T,T);
+        if((x*11+y*7)%5===0) g.fillStyle(0x6f9258).fillRect(x*T+11,y*T+14,4,18);
+      }
+      for(let x=1;x<19;x++) for(let y=6;y<10;y++) {
+        g.fillStyle((x+y)%2?0x917452:0xa4865d).fillRect(x*T,y*T,T,T);
+        g.fillStyle(0x665744).fillEllipse(x*T+29,y*T+31,10,6);
+      }
+      for(const [x,y] of [[2,2],[5,3],[8,1],[12,3],[16,2],[18,5],[3,11],[7,12],[12,12],[17,11]]) {
+        this.blocked.add(x+","+y);
+        g.fillStyle(0x4a342f).fillRect(x*T+20,y*T+21,9,27);
+        g.fillStyle(0x233f36).fillCircle(x*T+24,y*T+17,31);
+        g.fillStyle(0x3f7049).fillCircle(x*T+13,y*T+18,19).fillCircle(x*T+37,y*T+20,20);
+        g.fillStyle(0x6f9b5a).fillCircle(x*T+22,y*T+7,13);
+      }
+      // Ashfang trail markers and abandoned supplies.
+      g.fillStyle(0x382d2c).fillRect(10*T+8,5*T+22,2*T-16,19);
+      g.fillStyle(0xa36c42).fillRect(10*T+14,5*T+15,2*T-28,22);
+      g.fillStyle(0x1f2932).fillTriangle(14*T,5*T,14*T+27,5*T+18,14*T,5*T+34);
+      this.addBoundaries();
+      [[7,8],[12,7]].forEach(([x,y],i)=>this.spawnEnemy("road-"+i,"goblin",x,y,8,2,"Goblin Scout"));
+      this.spawnEnemy("road-orc","orc",16,8,12,3,"Ashfang Orc");
+      this.createCombatHero();
+      this.openDialogue([
+        "You follow black-fletched arrows into the old coastwood.",
+        "Beyond the trees, the ruined towers of Greywatch Castle rise through the mist."
+      ]);
+    }
+
+    buildCastle() {
+      this.prepareCombat("castle", 9, 12, "Defeat the Ashfang commander");
+      this.save.chapterStage="castle"; this.save.playerHp=this.getClassStats().hp; saveGame(this.save);
+      this.playerHp=this.playerMaxHp;
+      const g=this.add.graphics(),T=TILE;
+      for(let y=0;y<15;y++) for(let x=0;x<20;x++) {
+        g.fillStyle((x+y)%2?0x555a5c:0x616566).fillRect(x*T,y*T,T,T);
+        g.lineStyle(2,0x393d42,0.8).strokeRect(x*T,y*T,T,T);
+        if((x*5+y*3)%7===0) g.fillStyle(0x777b72).fillRect(x*T+8,y*T+9,24,4);
+      }
+      const wall=(x,y,w,h)=>{
+        for(let yy=y;yy<y+h;yy++) for(let xx=x;xx<x+w;xx++) this.blocked.add(xx+","+yy);
+        g.fillStyle(0x272b32,0.5).fillRect(x*T+8,y*T+10,w*T,h*T);
+        g.fillStyle(0x3e4448).fillRect(x*T,y*T,w*T,h*T);
+        for(let yy=y;yy<y+h;yy++) for(let xx=x;xx<x+w;xx++) {
+          g.lineStyle(3,0x69706d).strokeRect(xx*T+3,yy*T+3,T-6,T-6);
+          g.fillStyle(0x2c3937,0.6).fillRect(xx*T+9,yy*T+31,27,4);
+        }
+      };
+      wall(0,0,20,1); wall(0,14,20,1); wall(0,0,1,15); wall(19,0,1,15);
+      wall(1,4,6,1); wall(13,4,6,1);
+      wall(5,9,4,1); wall(11,9,4,1);
+      // Throne dais, banners, braziers and broken columns.
+      g.fillStyle(0x30343b).fillRect(7*T,1*T,6*T,3*T);
+      g.fillStyle(0x7e3c42).fillRect(8*T+8,T+5,T-16,2*T);
+      g.fillStyle(0x1d2834).fillTriangle(8*T+8,3*T+5,9*T-8,3*T+5,8*T+24,3*T+30);
+      g.fillStyle(0x7e3c42).fillRect(11*T+8,T+5,T-16,2*T);
+      g.fillStyle(0x1d2834).fillTriangle(11*T+8,3*T+5,12*T-8,3*T+5,11*T+24,3*T+30);
+      [[3,6],[16,6],[3,11],[16,11]].forEach(([x,y])=>{
+        this.blocked.add(x+","+y);
+        g.fillStyle(0x34373c).fillCircle(x*T+24,y*T+32,27);
+        g.fillStyle(0x7b5d47).fillRect(x*T+11,y*T+25,26,18);
+        g.fillStyle(0xd4523e).fillTriangle(x*T+8,y*T+25,x*T+24,y*T-5,x*T+40,y*T+25);
+        g.fillStyle(0xffbd55).fillTriangle(x*T+15,y*T+21,x*T+24,y*T+3,x*T+33,y*T+21);
+      });
+      this.spawnEnemy("castle-orc-a","orc",6,7,13,3,"Ashfang Reaver");
+      this.spawnEnemy("castle-orc-b","orc",13,7,13,3,"Ashfang Reaver");
+      this.spawnEnemy("varkul","hobgoblin",10,3,24,4,"Commander Varkul");
+      this.createCombatHero();
+      this.openDialogue([
+        "Greywatch Castle has become an Ashfang war camp.",
+        "COMMANDER VARKUL: The wizard promised us every village on this coast.",
+        "End the raid. Defeat Varkul."
+      ]);
+    }
+
+    onCombatCleared() {
+      this.save.playerHp=this.playerMaxHp;
+      if(this.area==="raid") {
+        this.save.raidCleared=true; saveGame(this.save);
+        this.openDialogue([
+          "The last goblin falls. Dunmere still stands.",
+          "NELL: They fled toward Greywatch. They took prisoners and supplies.",
+          "You leave at once, following the Ashfang trail."
+        ],()=>this.buildRoad());
+      } else if(this.area==="road") {
+        this.save.roadCleared=true; saveGame(this.save);
+        this.openDialogue([
+          "The final scout is defeated.",
+          "Through the trees, Greywatch's shattered gate stands open.",
+          "You tighten your grip and enter the abandoned castle."
+        ],()=>this.buildCastle());
+      } else if(this.area==="castle") {
+        this.save.gameComplete=true; this.save.chapterStage="complete"; saveGame(this.save);
+        this.showEnding();
+      }
+    }
+
+    restartCombatArea() {
+      this.save.playerHp=this.getClassStats().hp; saveGame(this.save);
+      if(this.area==="raid") this.buildRaid();
+      else if(this.area==="road") this.buildRoad();
+      else this.buildCastle();
+    }
+
+    showEnding() {
+      this.clearScene();
+      this.mode="ending";
+      this.cameras.main.setBackgroundColor(0x182847);
+      const g=this.add.graphics();
+      g.fillStyle(0x182847).fillRect(0,0,WIDTH,HEIGHT);
+      g.fillStyle(0x26334d).fillCircle(240,145,118);
+      g.fillStyle(0xe6b85c,0.3).fillCircle(240,145,82);
+      g.fillStyle(0xffefc1).fillCircle(240,145,42);
+      g.fillStyle(0x76558f).fillTriangle(210,215,240,105,270,215);
+      this.text(80,20,"DUNMERE IS SAVED",10,"#ffd166",0.5);
+      this.text(80,92,"THE WIZARD'S SHADOW",8,"#ffefc1",0.5);
+      this.text(80,108,"CHAPTER ONE COMPLETE",6,"#b7d1b0",0.5);
+      this.text(80,126,"Z: RETURN TO TITLE",5,"#ffd166",0.5);
+      this.openDialogue([
+        "Varkul falls. In his war chest you find orders sealed in violet wax.",
+        "The Ashfangs served a wizard called Malrec, who is gathering armies to conquer the Lantern Coast.",
+        "You return to Dunmere as its defender—but your first adventure has only revealed a greater threat."
+      ]);
     }
 
     pressed(...keys) {
@@ -914,8 +1284,16 @@
         return;
       }
 
+      if (this.mode === "ending") {
+        if (this.pressed(this.keys.z, this.keys.enter, this.keys.space)) this.showTitle();
+        return;
+      }
+
       if (this.mode !== "world") return;
-      if (this.pressed(this.keys.z, this.keys.enter, this.keys.space)) return this.talk();
+      if (this.pressed(this.keys.z, this.keys.enter, this.keys.space)) {
+        if (this.enemies && this.enemies.length && this.combatTalk()) return;
+        return this.talk();
+      }
       if (this.pressed(this.keys.left, this.keys.a)) return this.tryMove(-1, 0);
       if (this.pressed(this.keys.right, this.keys.d)) return this.tryMove(1, 0);
       if (this.pressed(this.keys.up, this.keys.w)) return this.tryMove(0, -1);
