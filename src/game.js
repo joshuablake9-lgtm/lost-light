@@ -95,29 +95,86 @@
     }
 
     makeTextures() {
-      const makePerson = (key, coat, hair = COLORS.ink) => {
-        const g = this.make.graphics({ add: false });
-        g.fillStyle(COLORS.ink);
-        g.fillRect(4, 1, 8, 2).fillRect(3, 3, 10, 6);
-        g.fillStyle(hair);
-        g.fillRect(4, 2, 8, 3).fillRect(3, 5, 3, 4).fillRect(10, 5, 3, 4);
-        g.fillStyle(COLORS.cream);
-        g.fillRect(5, 5, 6, 5);
-        g.fillStyle(COLORS.ink);
-        g.fillRect(6, 7, 1, 1).fillRect(9, 7, 1, 1).fillRect(3, 11, 10, 10);
-        g.fillStyle(coat);
-        g.fillRect(4, 11, 8, 8).fillRect(2, 12, 2, 6).fillRect(12, 12, 2, 6);
-        g.fillStyle(COLORS.cream);
-        g.fillRect(2, 18, 3, 2).fillRect(11, 18, 3, 2);
-        g.fillStyle(COLORS.ink);
-        g.fillRect(4, 19, 3, 5).fillRect(9, 19, 3, 5);
-        g.fillStyle(0x384968);
-        g.fillRect(4, 19, 3, 2).fillRect(9, 19, 3, 2);
-        g.generateTexture(key, 16, 24);
-        g.destroy();
+      const makePerson = (key, coat, hair, role = "villager") => {
+        const directions = ["down", "up", "side"];
+        directions.forEach(direction => {
+          const g = this.make.graphics({ add: false });
+          const outline = COLORS.ink;
+          const skin = 0xf0c38e;
+          const leather = 0x5a382f;
+          const metal = 0xa9b8b0;
+
+          // Ground shadow.
+          g.fillStyle(0x101827, 0.45).fillEllipse(12, 29, 15, 4);
+
+          // Legs, boots and body outline.
+          g.fillStyle(outline);
+          g.fillRect(6, 18, 12, 9).fillRect(5, 26, 6, 5).fillRect(13, 26, 6, 5);
+          g.fillRect(3, 17, 4, 9).fillRect(17, 17, 4, 9);
+          g.fillStyle(coat);
+          g.fillRect(7, 18, 10, 8).fillRect(4, 18, 3, 7).fillRect(17, 18, 3, 7);
+          g.fillStyle(leather);
+          g.fillRect(7, 24, 10, 2);
+          g.fillStyle(0x384968);
+          g.fillRect(6, 26, 5, 3).fillRect(13, 26, 5, 3);
+          g.fillStyle(leather);
+          g.fillRect(5, 29, 6, 2).fillRect(13, 29, 6, 2);
+
+          // Head outline and ears.
+          g.fillStyle(outline).fillRect(6, 6, 12, 12).fillRect(5, 10, 2, 5).fillRect(17, 10, 2, 5);
+          g.fillStyle(skin).fillRect(7, 8, 10, 9).fillRect(5, 11, 2, 3).fillRect(17, 11, 2, 3);
+
+          if (direction === "up") {
+            g.fillStyle(hair).fillRect(6, 6, 12, 11);
+            g.fillStyle(outline).fillRect(7, 16, 10, 2);
+          } else if (direction === "side") {
+            g.fillStyle(hair).fillRect(6, 6, 12, 5).fillRect(6, 9, 4, 7);
+            g.fillStyle(outline).fillRect(15, 11, 2, 2).fillRect(17, 14, 2, 1);
+          } else {
+            g.fillStyle(hair).fillRect(6, 6, 12, 4).fillRect(6, 9, 3, 4).fillRect(15, 9, 3, 4);
+            g.fillStyle(outline).fillRect(9, 12, 2, 2).fillRect(14, 12, 2, 2);
+            g.fillStyle(0xd08168).fillRect(11, 15, 3, 1);
+          }
+
+          // Class-specific silhouettes and readable equipment.
+          if (role === "fighter") {
+            g.fillStyle(metal).fillRect(3, 17, 5, 4).fillRect(16, 17, 5, 4);
+            g.fillStyle(COLORS.gold).fillRect(11, 20, 2, 2);
+            g.fillStyle(metal).fillRect(20, 12, 2, 13);
+            g.fillStyle(leather).fillRect(19, 22, 4, 2);
+          } else if (role === "ranger") {
+            g.fillStyle(0x31553c).fillTriangle(5, 10, 12, 3, 19, 10);
+            g.fillStyle(leather).fillRect(18, 8, 2, 18);
+            g.fillStyle(COLORS.gold).fillRect(19, 7, 1, 5).fillRect(21, 9, 1, 5);
+          } else if (role === "rogue") {
+            g.fillStyle(0x453555).fillTriangle(5, 10, 12, 3, 19, 10);
+            g.fillStyle(0xc35d68).fillRect(7, 16, 10, 2);
+            g.fillStyle(metal).fillRect(2, 22, 5, 2).fillRect(17, 22, 5, 2);
+          } else if (role === "cleric") {
+            g.fillStyle(0xf2ead0).fillRect(7, 18, 10, 7);
+            g.fillStyle(COLORS.gold).fillRect(11, 19, 2, 5).fillRect(9, 21, 6, 2);
+            g.fillStyle(COLORS.gold).fillRect(20, 12, 2, 14).fillCircle(21, 10, 4);
+          } else if (role === "wizard") {
+            g.fillStyle(0x334b85).fillTriangle(3, 8, 13, 0, 20, 8).fillRect(3, 7, 18, 3);
+            g.fillStyle(COLORS.gold).fillRect(10, 3, 2, 2).fillRect(15, 6, 2, 2);
+            g.fillStyle(0x6b432f).fillRect(20, 12, 2, 15);
+            g.fillStyle(0x65b9c7).fillCircle(21, 10, 3);
+          } else if (role === "innkeeper") {
+            g.fillStyle(0xf2ead0).fillRect(8, 19, 8, 7);
+            g.fillStyle(COLORS.gold).fillRect(11, 21, 2, 2);
+          } else {
+            g.fillStyle(COLORS.gold).fillRect(11, 20, 2, 2);
+          }
+
+          g.generateTexture(key + "-" + direction, 24, 32);
+          g.destroy();
+        });
       };
-      makePerson("hero", 0x3f6380, 0x5b352d);
-      MENTORS.forEach(m => makePerson(m.id, m.color));
+
+      makePerson("hero", 0x3f6380, 0x5b352d, "hero");
+      MENTORS.forEach(m => makePerson(m.id, m.color, 0x2c2730, m.id));
+      makePerson("mara", 0x9b6647, 0x6b3e32, "innkeeper");
+
       const flame = this.make.graphics({ add: false });
       flame.fillStyle(COLORS.red).fillRect(4, 7, 8, 8);
       flame.fillStyle(COLORS.gold).fillRect(6, 3, 5, 10);
@@ -284,7 +341,7 @@
         .setDepth(10).setScale(3);
 
       this.npcs = MENTORS.map(m => {
-        const sprite = this.add.sprite(m.x * TILE + 24, m.y * TILE + 12, m.id).setDepth(9).setScale(3);
+        const sprite = this.add.sprite(m.x * TILE + 24, m.y * TILE + 12, m.id + "-down").setDepth(9).setScale(2);
         this.blocked.add(m.x + "," + m.y);
         return { ...m, sprite };
       });
@@ -294,7 +351,7 @@
         intro: this.save.className
           ? ["MARA: There you are, birthday boy.", "Your breakfast is getting cold.", "Go on. Everyone has something to say before the celebration."]
           : ["MARA: Happy birthday.", "Everyone who helped raise you came early.", "Speak with them. Today you decide what path you'll walk."],
-        sprite: this.add.sprite(9 * TILE + 24, 4 * TILE + 12, "fighter").setTint(0xc99157).setDepth(9).setScale(3)
+        sprite: this.add.sprite(9 * TILE + 24, 4 * TILE + 12, "mara-down").setDepth(9).setScale(2)
       };
       this.npcs.push(innkeeper);
       this.blocked.add("9,4");
@@ -461,6 +518,13 @@
     tryMove(dx, dy) {
       if (this.busy || this.mode !== "world") return;
       this.facing = { x: dx, y: dy };
+      if (dy < 0) {
+        this.hero.setTexture("hero-up").setFlipX(false);
+      } else if (dy > 0) {
+        this.hero.setTexture("hero-down").setFlipX(false);
+      } else {
+        this.hero.setTexture("hero-side").setFlipX(dx < 0);
+      }
       const nx = this.heroTile.x + dx;
       const ny = this.heroTile.y + dy;
       if (this.blocked.has(nx + "," + ny)) return;
