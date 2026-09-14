@@ -361,12 +361,6 @@
         g.fillStyle(0xe5d290, 0.12).fillTriangle(px + 5, 2 * TILE + 34, px + TILE - 5, 2 * TILE + 34, px + TILE + 28, 5 * TILE);
       });
 
-      for (let x = 1; x < 19; x++) {
-          g.fillStyle((x + y) % 2 ? COLORS.floorA : COLORS.floorB);
-          g.fillRect(x * TILE, y * TILE, TILE, TILE);
-        }
-      }
-
       g.fillStyle(COLORS.timber);
       g.fillRect(TILE, 2 * TILE, 18 * TILE, 6);
       g.fillRect(TILE, 15 * TILE - 6, 18 * TILE, 6);
