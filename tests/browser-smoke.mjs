@@ -1,4 +1,5 @@
-import { chromium } from "playwright";\nimport { writeFile } from "node:fs/promises";
+import { chromium } from "playwright";
+import { writeFile } from "node:fs/promises";
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
@@ -37,6 +38,9 @@ const result = [
   "CANVAS_STATE " + JSON.stringify(canvasState),
   "STATUS_TEXT " + await page.locator(".status").innerText().catch(() => "unavailable"),
   ...errors
-].join("\n");
-await writeFile("smoke-result.txt", result + "\n");
-if (errors.length) console.error(errors.join("\n"));
+].join("
+");
+await writeFile("smoke-result.txt", result + "
+");
+if (errors.length) console.error(errors.join("
+"));
