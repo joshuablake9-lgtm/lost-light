@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#182847" />
+  <title>Lost Light</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Lost Light</h1>
+      <p>A tale of the Lantern Coast</p>
+    </header>
+    <div id="game-shell" aria-label="Lost Light game">
+      <div id="game"></div>
+    </div>
+    <section class="controls" aria-label="Controls">
+      <span><kbd>WASD</kbd> / <kbd>Arrows</kbd> Move</span>
+      <span><kbd>Z</kbd> / <kbd>Enter</kbd> Talk</span>
+      <span><kbd>X</kbd> Back</span>
+    </section>
+    <p class="status">First playable prototype · Chapter One: The Ashfang Raid</p>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script>
+  <script src="./src/game.js"></script>
+</body>
+</html>
