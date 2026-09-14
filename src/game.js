@@ -448,15 +448,42 @@
         }
       }
 
+      // Fine ground texture: grass blades, clover, stones and tiny wildflowers.
+      for (let y = 0; y < 15; y++) {
+        for (let x = 5; x < 20; x++) {
+          const px = x * T, py = y * T;
+          const seed = (x * 37 + y * 61) % 17;
+          g.fillStyle(seed % 2 ? 0x436f45 : 0x86b66d, 0.85);
+          g.fillRect(px + 8 + seed, py + 10, 3, 10);
+          g.fillRect(px + 17 + (seed % 9), py + 28, 3, 7);
+          if (seed === 3 || seed === 11) {
+            g.fillStyle(seed === 3 ? 0xf3d875 : 0xd99aa2);
+            g.fillRect(px + 29, py + 17, 5, 5);
+            g.fillStyle(0xf4edca).fillRect(px + 31, py + 19, 2, 2);
+          }
+          if (seed === 7) {
+            g.fillStyle(0x77766c).fillEllipse(px + 13, py + 35, 10, 6);
+            g.fillStyle(0xa9a38d).fillRect(px + 10, py + 33, 5, 2);
+          }
+        }
+      }
+
       // Sea, surf, cliffs and dock.
       for(let y=0;y<15;y++) {
         for(let x=0;x<4;x++) {
-          g.fillStyle((x+y)%2?0x34778b:0x2c6980).fillRect(x*T,y*T,T,T);
-          g.fillStyle(0x91cbc1,0.75).fillRect(x*T+8,y*T+15,27,3);
+          const water = (x + y) % 3 === 0 ? 0x245d78 : ((x + y) % 2 ? 0x347f94 : 0x2b7089);
+          g.fillStyle(water).fillRect(x*T,y*T,T,T);
+          g.fillStyle(0x72b8b5,0.8).fillRect(x*T+5,y*T+13,28,3);
+          g.fillStyle(0xb8ded2,0.55).fillRect(x*T+18,y*T+28,25,3);
+          g.fillStyle(0x1e536e,0.7).fillRect(x*T+2,y*T+42,19,3);
           block(x,y);
         }
-        g.fillStyle(0x5d6260).fillRect(4*T,y*T,15,T);
-        g.fillStyle(0x9b927a).fillRect(4*T+15,y*T,7,T);
+        g.fillStyle(0x4e5557).fillRect(4*T,y*T,15,T);
+        g.fillStyle(0x74766c).fillRect(4*T+4,y*T,11,T);
+        g.fillStyle(0xa9a18b).fillRect(4*T+15,y*T,7,T);
+        g.fillStyle(0xd7d0ad,0.85).fillRect(4*T+18,y*T+4,4,T-8);
+        g.fillStyle(0x313f47,0.45).fillRect(4*T+2,y*T+12,8,4);
+        g.fillStyle(0x91cbc1,0.9).fillRect(3*T+31,y*T+8,17,4);
         block(4,y);
       }
       for(let x=1;x<6;x++) {
@@ -465,10 +492,17 @@
         this.blocked.delete(x+",9");
       }
 
-      // Roads and the village square.
+      // Roads and village square: worn earth, ruts, stones and grassy edges.
       for(let y=0;y<15;y++) for(const x of [8,9,10]) {
         g.fillStyle((x+y)%2?0xb99b6b:0xc8aa78).fillRect(x*T,y*T,T,T);
-        g.fillStyle(0x897357).fillEllipse(x*T+15,y*T+19,8,5);
+        g.fillStyle(0x8a704f,0.65).fillRect(x*T+7,y*T,T-14,3);
+        g.fillStyle(0xddc18a,0.7).fillRect(x*T+12,y*T+11,T-24,2);
+        g.fillStyle(0x756650).fillEllipse(x*T+15,y*T+19,8,5);
+        g.fillStyle(0x9b865f).fillEllipse(x*T+37,y*T+36,11,6);
+      }
+      for (let y=0;y<15;y++) {
+        g.fillStyle(0x4f7d49,0.75).fillRect(8*T-5,y*T,5,T);
+        g.fillStyle(0x4f7d49,0.75).fillRect(11*T,y*T,5,T);
       }
       for(let y=6;y<10;y++) for(let x=5;x<19;x++) {
         g.fillStyle((x+y)%2?0xc2a371:0xb49364).fillRect(x*T,y*T,T,T);
@@ -478,9 +512,25 @@
       const house=(x,y,w,h,wall,roof,doorX)=>{
         const px=x*T,py=y*T,pw=w*T,ph=h*T;
         g.fillStyle(0x252631,0.35).fillRect(px+12,py+15,pw,ph);
+        g.fillStyle(0x27313a,0.35).fillRect(px+10,py+T+13,pw+8,ph-T);
         g.fillStyle(wall).fillRect(px,py+T,pw,ph-T);
         g.fillStyle(roof).fillTriangle(px-13,py+T+10,px+pw/2,py-18,px+pw+13,py+T+10);
+        // Layered roof shingles and bright weathered edges.
+        for (let row=0; row<4; row++) {
+          const inset=row*15;
+          const roofY=py+8+row*12;
+          g.lineStyle(4,row%2?0x51363a:0x80504b,0.9);
+          g.lineBetween(px+inset,roofY,px+pw-inset,roofY);
+          for(let sx=px+inset+10+(row%2)*12;sx<px+pw-inset;sx+=28) {
+            g.fillStyle(0x3d3035,0.65).fillRect(sx,roofY-2,3,8);
+          }
+        }
+        g.lineStyle(4,0xa96d55,0.8).lineBetween(px-8,py+T+7,px+pw+8,py+T+7);
+        // Dark timber frame and plaster panels.
         g.fillStyle(0x382c30).fillRect(px,py+T+6,pw,8);
+        g.fillRect(px+7,py+T,7,ph-T).fillRect(px+pw-14,py+T,7,ph-T);
+        g.fillRect(px+pw/2-3,py+T+7,6,ph-T-7);
+        g.fillStyle(0xe3c48a,0.22).fillRect(px+16,py+T+18,pw/2-22,ph-T-29);
         for(let sx=px+15;sx<px+pw-15;sx+=32) {
           g.fillStyle(0xa55f42).fillRect(sx,py+8,25,12);
           g.fillStyle(0x6d3c37).fillRect(sx+6,py+3,19,6);
@@ -498,6 +548,29 @@
       house(14,1,5,4,0xc19a68,0x4f5d48,16);
       house(14,10,5,4,0x9f7655,0x4c4140,16);
       house(5,11,3,3,0xc5a36f,0x765245,6);
+
+      // Village dressing: cart, cargo, lamps, shrubs and a fishing skiff.
+      g.fillStyle(0x47332f).fillRect(5*T+8,8*T+13,2*T-12,24);
+      g.fillStyle(0x9a6844).fillRect(5*T+14,8*T+7,2*T-26,22);
+      g.fillStyle(0x292b35).fillCircle(5*T+23,8*T+39,15).fillCircle(6*T+28,8*T+39,15);
+      g.fillStyle(0xb48451).fillCircle(5*T+23,8*T+39,7).fillCircle(6*T+28,8*T+39,7);
+      [[7,5],[14,5],[7,10],[17,9]].forEach(([x,y]) => {
+        g.fillStyle(0x3f302e).fillRect(x*T+21,y*T+8,7,39);
+        g.fillStyle(0xe6b85c,0.25).fillCircle(x*T+24,y*T+8,24);
+        g.fillStyle(0x273344).fillRect(x*T+14,y*T,20,19);
+        g.fillStyle(0xffd166).fillRect(x*T+19,y*T+4,10,11);
+        g.fillStyle(0xffefc1).fillRect(x*T+22,y*T+5,4,7);
+      });
+      [[13,4],[18,4],[13,10],[8,13]].forEach(([x,y]) => {
+        g.fillStyle(0x365c3f).fillCircle(x*T+24,y*T+31,22);
+        g.fillStyle(0x568552).fillCircle(x*T+13,y*T+28,15).fillCircle(x*T+35,y*T+25,17);
+        g.fillStyle(0x8fbd6d).fillCircle(x*T+23,y*T+19,12);
+        g.fillStyle(0xe8cc71).fillRect(x*T+10,y*T+26,4,4);
+      });
+      g.fillStyle(0x3e2f2d).fillRect(2*T,10*T+14,2*T,18);
+      g.fillStyle(0xb3784d).fillTriangle(T+12,10*T+16,3*T,9*T+30,4*T+35,10*T+16);
+      g.fillStyle(0xd6b16d).fillRect(2*T+8,10*T+18,2*T-16,5);
+      g.fillStyle(0x253d4d).fillRect(2*T+17,10*T+24,2*T-34,9);
 
       // Lost Light sign and lantern.
       g.fillStyle(0x372b2f).fillRect(6*T+10,4*T-17,7,47);
