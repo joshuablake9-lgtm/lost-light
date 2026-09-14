@@ -1,6 +1,6 @@
 :root {
   color-scheme: dark;
-  font-family: "Courier New", monospace;
+  font-family: "Silkscreen", monospace;
   background: #101827;
   color: #f3e6b3;
 }
@@ -46,7 +46,7 @@ header p { margin: 4px 0 16px; color: #b7c9a8; }
   gap: 12px 22px;
   margin-top: 16px;
   color: #d7dfc4;
-  font-size: 13px;
+  font-size: 12px;
 }
 kbd {
   display: inline-block;
