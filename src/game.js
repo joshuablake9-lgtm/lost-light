@@ -315,6 +315,7 @@
     buildInn() {
       this.clearScene();
       this.mode = "world";
+      this.area = "inn";
       this.heroTile = { x: 9, y: 12 };
       this.blocked = new Set();
 
@@ -375,6 +376,13 @@
         this.blocked.add("1," + y);
         this.blocked.add("18," + y);
       }
+
+      // South doorway to Dunmere. Stepping onto the threshold changes areas.
+      g.fillStyle(0x2a2530).fillRect(9 * TILE + 7, 14 * TILE + 15, TILE - 14, TILE - 15);
+      g.fillStyle(0x5e372f).fillRect(9 * TILE + 3, 14 * TILE + 8, 6, TILE - 8);
+      g.fillStyle(0xb07146).fillRect(10 * TILE - 9, 14 * TILE + 8, 6, TILE - 8);
+      g.fillStyle(0xd8b66f).fillRect(9 * TILE + 12, 13 * TILE + 35, TILE - 24, 8);
+      this.blocked.delete("9,14");
 
       this.drawFurniture(g);
       this.text(80, 4, "LOST LIGHT INN · MORNING", 6, "#ffefc1", 0.5);
