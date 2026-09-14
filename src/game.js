@@ -3,6 +3,8 @@
 
   const WIDTH = 160;
   const HEIGHT = 144;
+  const TITLE_WIDTH = 320;
+  const TITLE_HEIGHT = 288;
   const TILE = 16;
   const MAP_WIDTH = 20 * TILE;
   const MAP_HEIGHT = 15 * TILE;
@@ -147,32 +149,76 @@
 
     showTitle() {
       this.clearScene();
+      this.scale.resize(TITLE_WIDTH, TITLE_HEIGHT);
+      this.cameras.main.setBounds(0, 0, TITLE_WIDTH, TITLE_HEIGHT);
       this.mode = "title";
-      const bg = this.add.graphics();
-      bg.fillStyle(COLORS.ink).fillRect(0, 0, WIDTH, HEIGHT);
-      bg.fillStyle(0x213b52).fillRect(0, 92, WIDTH, 52);
-      bg.fillStyle(0x31566a).fillTriangle(0, 92, 36, 62, 70, 92);
-      bg.fillTriangle(45, 92, 100, 48, 150, 92);
-      bg.fillStyle(0x101b32).fillRect(0, 112, WIDTH, 32);
-      bg.fillStyle(COLORS.gold).fillRect(76, 58, 8, 24);
-      bg.fillStyle(COLORS.white).fillRect(78, 59, 4, 13);
-      bg.fillStyle(COLORS.red).fillRect(79, 60, 2, 8);
 
-      this.text(80, 20, "LOST LIGHT", 14, "#ffd166", 0.5)
-        .setShadow(2, 2, "#8b3a3a", 0, false, true);
-      this.text(80, 38, "A TALE OF THE LANTERN COAST", 6, "#b7d1b0", 0.5);
-      this.text(80, 104, this.save.className ? "CONTINUE" : "NEW GAME", 7, "#fff7d6", 0.5);
-      this.text(80, 118, "PRESS Z OR ENTER", 6, "#e6b85c", 0.5);
+      const bg = this.add.graphics();
+      bg.fillGradientStyle(0x101827, 0x101827, 0x243b59, 0x243b59, 1);
+      bg.fillRect(0, 0, TITLE_WIDTH, TITLE_HEIGHT);
+
+      // Moonlit Lantern Coast: layered silhouettes at double gameplay resolution.
+      bg.fillStyle(0xf7e6ad).fillCircle(250, 44, 20);
+      bg.fillStyle(0x243b59).fillCircle(257, 39, 19);
+      bg.fillStyle(0x31566a);
+      bg.fillTriangle(0, 198, 66, 108, 136, 198);
+      bg.fillTriangle(76, 198, 190, 82, 302, 198);
+      bg.fillTriangle(210, 198, 274, 126, 340, 198);
+      bg.fillStyle(0x1d344c);
+      bg.fillTriangle(-30, 220, 72, 142, 164, 220);
+      bg.fillTriangle(122, 220, 224, 128, 350, 220);
+
+      bg.fillStyle(0x17263b).fillRect(0, 200, TITLE_WIDTH, 88);
+      bg.fillStyle(0x284c63).fillRect(0, 221, TITLE_WIDTH, 67);
+      for (let x = 0; x < TITLE_WIDTH; x += 24) {
+        bg.fillStyle(x % 48 ? 0x3c7181 : 0x315f75);
+        bg.fillRect(x, 230 + (x % 3) * 5, 18, 2);
+        bg.fillRect(x + 7, 250 + (x % 4) * 4, 26, 2);
+      }
+
+      // Coastal village lights.
+      for (const house of [[28,205],[52,198],[79,210],[104,194],[130,205]]) {
+        bg.fillStyle(0x162238).fillRect(house[0], house[1], 19, 15);
+        bg.fillTriangle(house[0]-3, house[1], house[0]+10, house[1]-10, house[0]+22, house[1]);
+        bg.fillStyle(0xf4bd5f).fillRect(house[0]+5, house[1]+5, 4, 5);
+      }
+
+      // Large inn lantern focal point.
+      bg.fillStyle(0x4c2d2d).fillRect(258, 66, 8, 84);
+      bg.fillStyle(0x6f4536).fillRect(228, 65, 38, 8);
+      bg.fillStyle(0x182847).fillRect(231, 78, 31, 48);
+      bg.fillStyle(0xe6b85c).fillRect(235, 82, 23, 39);
+      bg.fillStyle(0xffefc1).fillRect(241, 87, 11, 27);
+      bg.fillStyle(0xd96b43).fillRect(245, 93, 5, 18);
+      bg.lineStyle(4, 0x182847).strokeRect(231, 78, 31, 48);
+      bg.lineBetween(246, 78, 246, 126);
+      bg.lineBetween(231, 101, 262, 101);
+
+      // Stars.
+      bg.fillStyle(0xffefc1);
+      [[24,32],[55,54],[91,25],[214,23],[282,31],[302,68],[184,53]].forEach(([x,y]) => {
+        bg.fillRect(x-2,y,5,1).fillRect(x,y-2,1,5);
+      });
+
+      this.text(26, 32, "LOST", 27, "#ffefc1")
+        .setShadow(3, 3, "#8b3a3a", 0, false, true);
+      this.text(26, 62, "LIGHT", 27, "#ffefc1")
+        .setShadow(3, 3, "#8b3a3a", 0, false, true);
+      this.text(28, 98, "A TALE OF THE LANTERN COAST", 8, "#b7d1b0");
+      this.text(160, 221, this.save.className ? "CONTINUE" : "NEW JOURNEY", 13, "#fff7d6", 0.5);
+      const prompt = this.text(160, 246, "PRESS Z OR ENTER", 9, "#e6b85c", 0.5);
       if (this.save.className) {
-        this.text(80, 128, "R: ERASE SAVE", 5, "#89a39a", 0.5);
+        this.text(160, 266, "R: ERASE SAVE", 7, "#89a39a", 0.5);
       }
       this.tweens.add({
-        targets: this.children.list[this.children.list.length - (this.save.className ? 2 : 1)],
-        alpha: { from: 1, to: 0.25 }, duration: 650, yoyo: true, repeat: -1
+        targets: prompt,
+        alpha: { from: 1, to: 0.35 }, duration: 650, yoyo: true, repeat: -1
       });
     }
 
     startGame() {
+      this.scale.resize(WIDTH, HEIGHT);
+      this.cameras.main.setBounds(0, 0, WIDTH, HEIGHT);
       if (this.save.className) {
         this.buildInn();
         this.openDialogue([
