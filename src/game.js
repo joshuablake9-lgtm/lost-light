@@ -512,6 +512,10 @@
 
   document.fonts.ready.then(() => new Phaser.Game({
     type: Phaser.AUTO,
+    resolution: Math.min(Math.max(window.devicePixelRatio || 1, 2), 4),
+    antialias: false,
+    antialiasGL: false,
+    powerPreference: "high-performance",
     width: WIDTH,
     height: HEIGHT,
     parent: "game",
@@ -520,7 +524,8 @@
     backgroundColor: "#182847",
     scale: {
       mode: Phaser.Scale.FIT,
-      autoCenter: Phaser.Scale.CENTER_BOTH
+      autoCenter: Phaser.Scale.CENTER_BOTH,
+      autoRound: true
     },
     scene: [LostLightScene]
   }));
