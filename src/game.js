@@ -217,9 +217,9 @@
 
       const bg = this.add.graphics();
       bg.fillGradientStyle(0x101827, 0x101827, 0x243b59, 0x243b59, 1);
-      bg.fillRect(0, 0, TITLE_WIDTH / 2, TITLE_HEIGHT / 2);
+      bg.fillRect(0, 0, TITLE_WIDTH / 3, TITLE_HEIGHT / 3);
 
-      // Moonlit Lantern Coast: layered silhouettes at double gameplay resolution.
+      // Moonlit Lantern Coast: layered silhouettes in a normalized 320×288 design grid.
       bg.fillStyle(0xf7e6ad).fillCircle(250, 44, 20);
       bg.fillStyle(0x243b59).fillCircle(257, 39, 19);
       bg.fillStyle(0x31566a);
@@ -230,9 +230,9 @@
       bg.fillTriangle(-30, 220, 72, 142, 164, 220);
       bg.fillTriangle(122, 220, 224, 128, 350, 220);
 
-      bg.fillStyle(0x17263b).fillRect(0, 200, TITLE_WIDTH / 2, 88);
-      bg.fillStyle(0x284c63).fillRect(0, 221, TITLE_WIDTH / 2, 67);
-      for (let x = 0; x < TITLE_WIDTH / 2; x += 24) {
+      bg.fillStyle(0x17263b).fillRect(0, 200, TITLE_WIDTH / 3, 88);
+      bg.fillStyle(0x284c63).fillRect(0, 221, TITLE_WIDTH / 3, 67);
+      for (let x = 0; x < TITLE_WIDTH / 3; x += 24) {
         bg.fillStyle(x % 48 ? 0x3c7181 : 0x315f75);
         bg.fillRect(x, 230 + (x % 3) * 5, 18, 2);
         bg.fillRect(x + 7, 250 + (x % 4) * 4, 26, 2);
