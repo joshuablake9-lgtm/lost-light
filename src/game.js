@@ -284,7 +284,7 @@
         .setDepth(10).setScale(2);
 
       this.npcs = MENTORS.map(m => {
-        const sprite = this.add.sprite(m.x * TILE + 16, m.y * TILE + 8, m.id).setDepth(9);
+        const sprite = this.add.sprite(m.x * TILE + 16, m.y * TILE + 8, m.id).setDepth(9).setScale(2);
         this.blocked.add(m.x + "," + m.y);
         return { ...m, sprite };
       });
