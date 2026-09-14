@@ -1,11 +1,11 @@
 (() => {
   "use strict";
 
-  const WIDTH = 160;
-  const HEIGHT = 144;
-  const TITLE_WIDTH = 320;
-  const TITLE_HEIGHT = 288;
-  const TILE = 16;
+  const WIDTH = 320;
+  const HEIGHT = 288;
+  const TITLE_WIDTH = 640;
+  const TITLE_HEIGHT = 576;
+  const TILE = 32;
   const MAP_WIDTH = 20 * TILE;
   const MAP_HEIGHT = 15 * TILE;
   const SAVE_KEY = "lost-light-save-v1";
@@ -137,9 +137,11 @@
     }
 
     text(x, y, value, size = 7, color = "#ffefc1", origin = 0) {
-      return this.add.text(x, y, value, {
+      const renderScale = 2;
+      return this.add.text(x * renderScale, y * renderScale, value, {
+
         fontFamily: 'Silkscreen, monospace',
-        fontSize: size + "px",
+        fontSize: (size * renderScale) + "px",
         fontStyle: "bold",
         color,
         resolution: 2,
@@ -155,7 +157,7 @@
 
       const bg = this.add.graphics();
       bg.fillGradientStyle(0x101827, 0x101827, 0x243b59, 0x243b59, 1);
-      bg.fillRect(0, 0, TITLE_WIDTH, TITLE_HEIGHT);
+      bg.fillRect(0, 0, TITLE_WIDTH / 2, TITLE_HEIGHT / 2);
 
       // Moonlit Lantern Coast: layered silhouettes at double gameplay resolution.
       bg.fillStyle(0xf7e6ad).fillCircle(250, 44, 20);
@@ -168,9 +170,9 @@
       bg.fillTriangle(-30, 220, 72, 142, 164, 220);
       bg.fillTriangle(122, 220, 224, 128, 350, 220);
 
-      bg.fillStyle(0x17263b).fillRect(0, 200, TITLE_WIDTH, 88);
-      bg.fillStyle(0x284c63).fillRect(0, 221, TITLE_WIDTH, 67);
-      for (let x = 0; x < TITLE_WIDTH; x += 24) {
+      bg.fillStyle(0x17263b).fillRect(0, 200, TITLE_WIDTH / 2, 88);
+      bg.fillStyle(0x284c63).fillRect(0, 221, TITLE_WIDTH / 2, 67);
+      for (let x = 0; x < TITLE_WIDTH / 2; x += 24) {
         bg.fillStyle(x % 48 ? 0x3c7181 : 0x315f75);
         bg.fillRect(x, 230 + (x % 3) * 5, 18, 2);
         bg.fillRect(x + 7, 250 + (x % 4) * 4, 26, 2);
@@ -193,6 +195,8 @@
       bg.lineStyle(4, 0x182847).strokeRect(231, 78, 31, 48);
       bg.lineBetween(246, 78, 246, 126);
       bg.lineBetween(231, 101, 262, 101);
+
+      bg.setScale(2);
 
       // Stars.
       bg.fillStyle(0xffefc1);
@@ -276,11 +280,11 @@
       this.drawFurniture(g);
       this.text(80, 4, "LOST LIGHT INN · MORNING", 6, "#ffefc1", 0.5);
 
-      this.hero = this.add.sprite(this.heroTile.x * TILE + 8, this.heroTile.y * TILE + 4, "hero")
-        .setDepth(10);
+      this.hero = this.add.sprite(this.heroTile.x * TILE + 16, this.heroTile.y * TILE + 8, "hero")
+        .setDepth(10).setScale(2);
 
       this.npcs = MENTORS.map(m => {
-        const sprite = this.add.sprite(m.x * TILE + 8, m.y * TILE + 4, m.id).setDepth(9);
+        const sprite = this.add.sprite(m.x * TILE + 16, m.y * TILE + 8, m.id).setDepth(9);
         this.blocked.add(m.x + "," + m.y);
         return { ...m, sprite };
       });
@@ -290,14 +294,14 @@
         intro: this.save.className
           ? ["MARA: There you are, birthday boy.", "Your breakfast is getting cold.", "Go on. Everyone has something to say before the celebration."]
           : ["MARA: Happy birthday.", "Everyone who helped raise you came early.", "Speak with them. Today you decide what path you'll walk."],
-        sprite: this.add.sprite(9 * TILE + 8, 4 * TILE + 4, "fighter").setTint(0xc99157).setDepth(9)
+        sprite: this.add.sprite(9 * TILE + 16, 4 * TILE + 8, "fighter").setTint(0xc99157).setDepth(9).setScale(2)
       };
       this.npcs.push(innkeeper);
       this.blocked.add("9,4");
 
       this.cameras.main.setBounds(0, 0, MAP_WIDTH, MAP_HEIGHT);
       this.cameras.main.startFollow(this.hero, true, 0.18, 0.18);
-      this.cameras.main.setDeadzone(40, 32);
+      this.cameras.main.setDeadzone(80, 64);
 
       this.text(4, 127, this.save.className ? "CLASS: " + this.save.className.toUpperCase() : "CHOOSE YOUR PATH", 5, "#ffd166");
       this.text(156, 127, "Z: TALK", 5, "#d7dfc4", 1);
@@ -327,7 +331,7 @@
       rect(14, 12, 3, 1);
       rect(8, 8, 2, 1);
       g.fillStyle(COLORS.gold).fillRect(8 * TILE, 8 * TILE, 2 * TILE, TILE);
-      this.add.sprite(9 * TILE, 8 * TILE + 8, "flame").setDepth(3);
+      this.add.sprite(9 * TILE, 8 * TILE + 16, "flame").setDepth(3).setScale(2);
     }
 
     openDialogue(lines, done = null) {
@@ -343,7 +347,7 @@
       if (this.dialogueText) this.dialogueText.destroy();
       if (this.dialogueHint) this.dialogueHint.destroy();
 
-      this.dialoguePanel = this.add.graphics().setDepth(50).setScrollFactor(0);
+      this.dialoguePanel = this.add.graphics().setDepth(50).setScrollFactor(0).setScale(2);
       this.dialoguePanel.fillStyle(COLORS.cream).fillRect(3, 86, 154, 55);
       this.dialoguePanel.fillStyle(COLORS.ink).fillRect(6, 89, 148, 49);
       this.dialoguePanel.lineStyle(1, COLORS.gold).strokeRect(5, 88, 150, 51);
@@ -422,7 +426,7 @@
     }
 
     showChoice(npc) {
-      this.choicePanel = this.add.graphics().setDepth(55).setScrollFactor(0);
+      this.choicePanel = this.add.graphics().setDepth(55).setScrollFactor(0).setScale(2);
       this.choicePanel.fillStyle(COLORS.cream).fillRect(24, 45, 112, 50);
       this.choicePanel.fillStyle(COLORS.ink).fillRect(27, 48, 106, 44);
       this.text(80, 54, npc.className.toUpperCase(), 8, "#ffd166", 0.5).setData("choice", true);
@@ -464,8 +468,8 @@
       this.busy = true;
       this.tweens.add({
         targets: this.hero,
-        x: nx * TILE + 8,
-        y: ny * TILE + 4,
+        x: nx * TILE + 16,
+        y: ny * TILE + 8,
         duration: 90,
         onComplete: () => { this.busy = false; }
       });
