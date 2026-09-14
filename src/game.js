@@ -174,6 +174,9 @@
       makePerson("hero", 0x3f6380, 0x5b352d, "hero");
       MENTORS.forEach(m => makePerson(m.id, m.color, 0x2c2730, m.id));
       makePerson("mara", 0x9b6647, 0x6b3e32, "innkeeper");
+      makePerson("villager-a", 0x7c5b8f, 0x4b302a, "villager");
+      makePerson("villager-b", 0x477b9d, 0xb88755, "villager");
+      makePerson("villager-c", 0x5f8b62, 0x372d2c, "villager");
 
       const flame = this.make.graphics({ add: false });
       flame.fillStyle(COLORS.red).fillRect(4, 7, 8, 8);
@@ -414,6 +417,153 @@
       }
     }
 
+    buildVillage() {
+      this.clearScene();
+      this.mode = "world";
+      this.area = "village";
+      this.heroTile = { x: 9, y: 5 };
+      this.facing = { x: 0, y: 1 };
+      this.blocked = new Set();
+      const g = this.add.graphics();
+      const T = TILE;
+      const block = (x,y,w=1,h=1) => {
+        for(let yy=y;yy<y+h;yy++) for(let xx=x;xx<x+w;xx++) this.blocked.add(xx+","+yy);
+      };
+
+      // Layered grass with small deterministic details.
+      for(let y=0;y<15;y++) for(let x=0;x<20;x++) {
+        const px=x*T,py=y*T;
+        g.fillStyle((x+y)%3===0?0x709c60:((x+y)%2?0x659254:0x78a566)).fillRect(px,py,T,T);
+        g.fillStyle(0x4d7a49,0.65).fillRect(px+7,py+13,13,3).fillRect(px+31,py+34,9,3);
+        if((x*7+y*11)%8===0) {
+          g.fillStyle(0xf0d36b).fillRect(px+23,py+20,5,5);
+          g.fillStyle(0xf1e5bd).fillRect(px+20,py+22,11,2);
+        }
+      }
+
+      // Sea, surf, cliffs and dock.
+      for(let y=0;y<15;y++) {
+        for(let x=0;x<4;x++) {
+          g.fillStyle((x+y)%2?0x34778b:0x2c6980).fillRect(x*T,y*T,T,T);
+          g.fillStyle(0x91cbc1,0.75).fillRect(x*T+8,y*T+15,27,3);
+          block(x,y);
+        }
+        g.fillStyle(0x5d6260).fillRect(4*T,y*T,15,T);
+        g.fillStyle(0x9b927a).fillRect(4*T+15,y*T,7,T);
+        block(4,y);
+      }
+      for(let x=1;x<6;x++) {
+        g.fillStyle(0x4d352f).fillRect(x*T,9*T+8,T,33);
+        g.fillStyle(0xa26e48).fillRect(x*T,9*T+8,T-3,7);
+        this.blocked.delete(x+",9");
+      }
+
+      // Roads and the village square.
+      for(let y=0;y<15;y++) for(const x of [8,9,10]) {
+        g.fillStyle((x+y)%2?0xb99b6b:0xc8aa78).fillRect(x*T,y*T,T,T);
+        g.fillStyle(0x897357).fillEllipse(x*T+15,y*T+19,8,5);
+      }
+      for(let y=6;y<10;y++) for(let x=5;x<19;x++) {
+        g.fillStyle((x+y)%2?0xc2a371:0xb49364).fillRect(x*T,y*T,T,T);
+        g.fillStyle(0x856e52).fillEllipse(x*T+35,y*T+32,7,4);
+      }
+
+      const house=(x,y,w,h,wall,roof,doorX)=>{
+        const px=x*T,py=y*T,pw=w*T,ph=h*T;
+        g.fillStyle(0x252631,0.35).fillRect(px+12,py+15,pw,ph);
+        g.fillStyle(wall).fillRect(px,py+T,pw,ph-T);
+        g.fillStyle(roof).fillTriangle(px-13,py+T+10,px+pw/2,py-18,px+pw+13,py+T+10);
+        g.fillStyle(0x382c30).fillRect(px,py+T+6,pw,8);
+        for(let sx=px+15;sx<px+pw-15;sx+=32) {
+          g.fillStyle(0xa55f42).fillRect(sx,py+8,25,12);
+          g.fillStyle(0x6d3c37).fillRect(sx+6,py+3,19,6);
+        }
+        g.fillStyle(0x4c342e).fillRect(doorX*T+9,py+ph-43,T-18,43);
+        g.fillStyle(0xe6b85c).fillCircle(doorX*T+T-14,py+ph-21,4);
+        for(const wx of [x+1,x+w-2]) {
+          g.fillStyle(0x29445c).fillRect(wx*T+11,py+T+23,T-22,28);
+          g.fillStyle(0xa2cec6).fillRect(wx*T+16,py+T+28,T-32,17);
+        }
+        block(x,y,w,h);
+        this.blocked.delete(doorX+","+(y+h-1));
+      };
+      house(6,0,7,5,0xb77a4d,0x6e3e42,9);
+      house(14,1,5,4,0xc19a68,0x4f5d48,16);
+      house(14,10,5,4,0x9f7655,0x4c4140,16);
+      house(5,11,3,3,0xc5a36f,0x765245,6);
+
+      // Lost Light sign and lantern.
+      g.fillStyle(0x372b2f).fillRect(6*T+10,4*T-17,7,47);
+      g.fillStyle(0x6d4433).fillRect(6*T+15,4*T-13,64,34);
+      g.lineStyle(3,0xe6b85c).strokeRect(6*T+19,4*T-9,56,26);
+      g.fillStyle(0xffd166).fillRect(6*T+82,4*T-5,12,22);
+      g.fillStyle(0xfff1bd).fillRect(6*T+86,4*T,4,12);
+
+      // Central well with timber frame.
+      block(11,7,2,2);
+      g.fillStyle(0x33313a,0.3).fillEllipse(12*T+8,9*T-7,94,31);
+      g.fillStyle(0x74756e).fillEllipse(12*T,8*T+10,88,55);
+      g.fillStyle(0xaea38c).fillEllipse(12*T,8*T+2,74,39);
+      g.fillStyle(0x26334d).fillEllipse(12*T,8*T+3,50,24);
+      g.fillStyle(0x5c3c31).fillRect(11*T+10,7*T+2,8,65).fillRect(13*T-18,7*T+2,8,65);
+      g.fillRect(11*T+10,7*T+2,2*T-20,8);
+
+      // Market stalls with striped awnings and produce.
+      [[5,6,0xa84b4b],[16,6,0x477b9d]].forEach(([x,y,color])=>{
+        block(x,y,2,1);
+        g.fillStyle(0x4d352f).fillRect(x*T+6,y*T+25,2*T-12,23);
+        g.fillStyle(color).fillTriangle(x*T,y*T+25,(x+1)*T,y*T-8,(x+2)*T,y*T+25);
+        g.fillStyle(0xeee1bb).fillTriangle(x*T+20,y*T+25,(x+1)*T,y*T-8,(x+1)*T+24,y*T+25);
+        g.fillStyle(0x805038).fillRect(x*T+10,y*T+31,2*T-20,16);
+        g.fillStyle(0xd0a052).fillCircle(x*T+27,y*T+35,8);
+        g.fillStyle(0x5f8b62).fillCircle(x*T+51,y*T+35,9);
+      });
+
+      // Fenced wheat field.
+      for(let y=10;y<14;y++) for(let x=9;x<13;x++) {
+        block(x,y);
+        g.fillStyle(0xd3aa50).fillRect(x*T+8,y*T+7,4,35).fillRect(x*T+25,y*T+3,4,39).fillRect(x*T+40,y*T+11,4,31);
+        g.fillStyle(0xf0cf73).fillRect(x*T+3,y*T+8,13,4).fillRect(x*T+20,y*T+4,13,4);
+      }
+      g.lineStyle(6,0x704536).strokeRect(9*T,10*T,4*T,4*T);
+
+      // Trees on the eastern rise.
+      [[18,5],[18,8],[13,13],[5,5]].forEach(([x,y])=>{
+        block(x,y);
+        g.fillStyle(0x52392f).fillRect(x*T+20,y*T+24,9,24);
+        g.fillStyle(0x315b42).fillCircle(x*T+24,y*T+18,31);
+        g.fillStyle(0x477b4a).fillCircle(x*T+13,y*T+20,20).fillCircle(x*T+36,y*T+17,22);
+        g.fillStyle(0x78aa62).fillCircle(x*T+18,y*T+9,13);
+      });
+
+      for(let x=0;x<20;x++){block(x,0);block(x,14);}
+      for(let y=0;y<15;y++) block(19,y);
+      this.blocked.delete("9,4");
+
+      this.text(80,4,"DUNMERE · LANTERN COAST",6,"#ffefc1",0.5);
+      this.text(4,127,"VILLAGE SQUARE",5,"#ffd166");
+      this.text(156,127,"Z: TALK",5,"#d7dfc4",1);
+      this.hero=this.add.sprite(9*T+24,5*T+12,"hero-down").setDepth(10).setScale(2);
+
+      const villagers=[
+        {id:"village-elin",x:7,y:7,texture:"villager-a-down",intro:["ELIN: Happy birthday!","Mara has half the village preparing your supper.","Stay near the square. Something has the gulls frightened."]},
+        {id:"village-tomas",x:14,y:8,texture:"villager-b-down",intro:["TOMAS: The northern road is too quiet.","No caravans have arrived since yesterday.","Captain Brann should hear about it."]},
+        {id:"village-nell",x:8,y:10,texture:"villager-c-down",intro:["NELL: I found black-fletched arrows by the east field.","They weren't made in Dunmere.","Maybe goblins are ranging farther south."]}
+      ];
+      this.npcs=villagers.map(n=>{
+        block(n.x,n.y);
+        return {...n,sprite:this.add.sprite(n.x*T+24,n.y*T+12,n.texture).setDepth(9).setScale(2)};
+      });
+      this.cameras.main.setBounds(0,0,MAP_WIDTH,MAP_HEIGHT);
+      this.cameras.main.startFollow(this.hero,true,0.18,0.18);
+      this.cameras.main.setDeadzone(120,96);
+      this.openDialogue([
+        "Dunmere rests above the bright waters of the Lantern Coast.",
+        "The village is preparing for your birthday, but something feels wrong.",
+        "Objective: Speak with the villagers and investigate the missing caravans."
+      ]);
+    }
+
     drawFurniture(g) {
       const T = TILE;
       const block = (x, y, w, h) => {
@@ -563,7 +713,7 @@
         return;
       }
 
-      if (npc.id === "innkeeper") {
+      if (npc.id === "innkeeper" || npc.id.startsWith("village-")) {
         this.openDialogue(npc.intro);
         return;
       }
@@ -637,6 +787,15 @@
       }
       const nx = this.heroTile.x + dx;
       const ny = this.heroTile.y + dy;
+      if (this.area === "inn" && nx === 9 && ny === 14) {
+        if (!this.save.className) this.openDialogue(["MARA: Choose your path before you head outside."]);
+        else this.buildVillage();
+        return;
+      }
+      if (this.area === "village" && nx === 9 && ny === 4) {
+        this.buildInn();
+        return;
+      }
       if (this.blocked.has(nx + "," + ny)) return;
       this.heroTile = { x: nx, y: ny };
       this.busy = true;
