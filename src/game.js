@@ -979,6 +979,15 @@
       }
       const nx = this.heroTile.x + dx;
       const ny = this.heroTile.y + dy;
+      if (this.area === "dungeon" && (nx === 9 || nx === 10) && ny === 0) {
+        if (this.enemies.length) this.openDialogue(["The northern passage is blocked while enemies remain."]);
+        else if (this.dungeonRoom < 9) this.buildDungeonRoom(this.dungeonRoom + 1,"south");
+        return;
+      }
+      if (this.area === "dungeon" && (nx === 9 || nx === 10) && ny === 14) {
+        if (this.dungeonRoom > 0) this.buildDungeonRoom(this.dungeonRoom - 1,"north");
+        return;
+      }
       if (this.area === "inn" && nx === 9 && ny === 14) {
         if (!this.save.className) this.openDialogue(["MARA: Choose your path before you head outside."]);
         else this.buildVillage();
@@ -1635,49 +1644,179 @@
     }
 
     buildCastle() {
-      this.prepareCombat("castle", 9, 12, "Defeat the Ashfang commander");
-      this.save.chapterStage="castle"; this.save.playerHp=this.getClassStats().hp; saveGame(this.save);
-      this.playerHp=this.playerMaxHp;
-      const g=this.add.graphics(),T=TILE;
-      for(let y=0;y<15;y++) for(let x=0;x<20;x++) {
-        g.fillStyle((x+y)%2?0x555a5c:0x616566).fillRect(x*T,y*T,T,T);
-        g.lineStyle(2,0x393d42,0.8).strokeRect(x*T,y*T,T,T);
-        if((x*5+y*3)%7===0) g.fillStyle(0x777b72).fillRect(x*T+8,y*T+9,24,4);
+      if (!Array.isArray(this.save.clearedRooms)) this.save.clearedRooms=[];
+      if (typeof this.save.dungeonRoom !== "number") {
+        this.save.dungeonRoom=0;
+        this.save.playerHp=this.getClassStats().hp;
       }
-      const wall=(x,y,w,h)=>{
+      this.save.chapterStage="castle";
+      saveGame(this.save);
+      this.buildDungeonRoom(this.save.dungeonRoom,"south");
+    }
+
+    buildDungeonRoom(index, entry="south") {
+      const rooms=[
+        {name:"THE SHATTERED GATEHOUSE",floor:0x5b6061,accent:0x8a7357,intro:"Broken murder holes overlook the gate. Ashfang sentries guard the way deeper."},
+        {name:"THE ASHFANG BARRACKS",floor:0x615b57,accent:0x8b4f3d,intro:"Rotted bunks have been claimed by the war band. Crude shields hang from every post."},
+        {name:"CHAPEL OF THE LOST FLAME",floor:0x555b61,accent:0x76558f,intro:"A roofless chapel remembers an older faith. Colored light falls across shattered pews."},
+        {name:"THE FLOODED UNDERCROFT",floor:0x46595c,accent:0x477b9d,intro:"Black water fills the undercroft. A narrow stone causeway crosses the drowned floor."},
+        {name:"THE IRON CELLS",floor:0x52575b,accent:0x6b7475,intro:"Rusting cages line the prison. The missing caravan drivers were held here."},
+        {name:"THE RUINED ARMORY",floor:0x5f5d58,accent:0xa84b4b,intro:"Weapon racks and smashed crates fill the old armory. The Ashfangs armed themselves here."},
+        {name:"THE GREAT KITCHEN",floor:0x665c50,accent:0xc99157,intro:"Cold ovens, butcher blocks, and hanging iron turn the castle kitchen into a grim camp."},
+        {name:"THE CINDER ARCHIVE",floor:0x4c4b56,accent:0x76558f,intro:"Scorched bookshelves surround a violet ritual circle. Malrec's influence is unmistakable."},
+        {name:"THE WAR ROOM",floor:0x59575b,accent:0xa84b4b,intro:"A map of the Lantern Coast covers the command table. Every nearby settlement is marked."},
+        {name:"THE ASHFANG THRONE",floor:0x4a4e55,accent:0xe6b85c,intro:"Commander Varkul waits beneath stolen banners, Malrec's violet seal hanging at his throat."}
+      ];
+      const room=rooms[index] || rooms[0];
+      const heroX=9, heroY=entry==="north"?2:12;
+      this.prepareCombat("dungeon",heroX,heroY,"Clear "+room.name);
+      this.dungeonRoom=index;
+      this.save.dungeonRoom=index;
+      this.save.chapterStage="castle";
+      saveGame(this.save);
+
+      const g=this.add.graphics(),T=TILE;
+      const block=(x,y,w=1,h=1)=>{
         for(let yy=y;yy<y+h;yy++) for(let xx=x;xx<x+w;xx++) this.blocked.add(xx+","+yy);
-        g.fillStyle(0x272b32,0.5).fillRect(x*T+8,y*T+10,w*T,h*T);
-        g.fillStyle(0x3e4448).fillRect(x*T,y*T,w*T,h*T);
+      };
+      const stone=(x,y,w=1,h=1,color=0x3c4247)=>{
+        block(x,y,w,h);
+        g.fillStyle(0x222831,0.45).fillRect(x*T+8,y*T+10,w*T,h*T);
+        g.fillStyle(color).fillRect(x*T,y*T,w*T,h*T);
         for(let yy=y;yy<y+h;yy++) for(let xx=x;xx<x+w;xx++) {
-          g.lineStyle(3,0x69706d).strokeRect(xx*T+3,yy*T+3,T-6,T-6);
-          g.fillStyle(0x2c3937,0.6).fillRect(xx*T+9,yy*T+31,27,4);
+          g.lineStyle(3,0x707570,0.75).strokeRect(xx*T+3,yy*T+3,T-6,T-6);
+          g.fillStyle(0x292f35,0.55).fillRect(xx*T+8,yy*T+31,29,4);
         }
       };
-      wall(0,0,20,1); wall(0,14,20,1); wall(0,0,1,15); wall(19,0,1,15);
-      wall(1,4,6,1); wall(13,4,6,1);
-      wall(5,9,4,1); wall(11,9,4,1);
-      // Throne dais, banners, braziers and broken columns.
-      g.fillStyle(0x30343b).fillRect(7*T,1*T,6*T,3*T);
-      g.fillStyle(0x7e3c42).fillRect(8*T+8,T+5,T-16,2*T);
-      g.fillStyle(0x1d2834).fillTriangle(8*T+8,3*T+5,9*T-8,3*T+5,8*T+24,3*T+30);
-      g.fillStyle(0x7e3c42).fillRect(11*T+8,T+5,T-16,2*T);
-      g.fillStyle(0x1d2834).fillTriangle(11*T+8,3*T+5,12*T-8,3*T+5,11*T+24,3*T+30);
-      [[3,6],[16,6],[3,11],[16,11]].forEach(([x,y])=>{
-        this.blocked.add(x+","+y);
-        g.fillStyle(0x34373c).fillCircle(x*T+24,y*T+32,27);
-        g.fillStyle(0x7b5d47).fillRect(x*T+11,y*T+25,26,18);
-        g.fillStyle(0xd4523e).fillTriangle(x*T+8,y*T+25,x*T+24,y*T-5,x*T+40,y*T+25);
-        g.fillStyle(0xffbd55).fillTriangle(x*T+15,y*T+21,x*T+24,y*T+3,x*T+33,y*T+21);
-      });
-      this.spawnEnemy("castle-orc-a","orc",6,7,13,3,"Ashfang Reaver");
-      this.spawnEnemy("castle-orc-b","orc",13,7,13,3,"Ashfang Reaver");
-      this.spawnEnemy("varkul","hobgoblin",10,3,24,4,"Commander Varkul");
+      const wood=(x,y,w=1,h=1)=>{
+        block(x,y,w,h);
+        g.fillStyle(0x2b2528).fillRect(x*T+5,y*T+8,w*T-10,h*T-8);
+        g.fillStyle(0x744733).fillRect(x*T+9,y*T+4,w*T-18,h*T-12);
+        g.lineStyle(3,0xa06a45).strokeRect(x*T+10,y*T+6,w*T-20,h*T-16);
+      };
+      const torch=(x,y)=>{
+        g.fillStyle(0xe6b85c,0.17).fillCircle(x*T+24,y*T+18,38);
+        g.fillStyle(0x392c2d).fillRect(x*T+21,y*T+19,6,27);
+        g.fillStyle(0xd9553f).fillTriangle(x*T+15,y*T+20,x*T+24,y*T-4,x*T+33,y*T+20);
+        g.fillStyle(0xffd166).fillTriangle(x*T+19,y*T+17,x*T+24,y*T+2,x*T+29,y*T+17);
+      };
+
+      // Uneven flagstones, cracks, moss and age-darkened grout.
+      for(let y=0;y<15;y++) for(let x=0;x<20;x++) {
+        const shade=(x*13+y*7)%3;
+        g.fillStyle(shade===0?room.floor:(shade===1?Phaser.Display.Color.IntegerToColor(room.floor).darken(6).color:Phaser.Display.Color.IntegerToColor(room.floor).lighten(5).color))
+          .fillRect(x*T,y*T,T,T);
+        g.lineStyle(2,0x31363b,0.72).strokeRect(x*T,y*T,T,T);
+        if((x*11+y*17)%9===0) {
+          g.lineStyle(2,0x252b31,0.75);
+          g.lineBetween(x*T+7,y*T+9,x*T+24,y*T+22);
+          g.lineBetween(x*T+24,y*T+22,x*T+17,y*T+39);
+        }
+        if((x*5+y*3)%13===0) g.fillStyle(0x455d46,0.55).fillRect(x*T+5,y*T+39,22,4);
+      }
+
+      // Massive perimeter masonry with paired door thresholds.
+      for(let x=0;x<20;x++){stone(x,0);stone(x,14);}
+      for(let y=1;y<14;y++){stone(0,y);stone(19,y);}
+      for(const doorX of [9,10]) {
+        this.blocked.delete(doorX+",0");
+        this.blocked.delete(doorX+",14");
+        g.fillStyle(0x171d25).fillRect(doorX*T,0,T,T);
+        g.fillStyle(0x171d25).fillRect(doorX*T,14*T,T,T);
+        g.fillStyle(room.accent).fillRect(doorX*T+5,T-8,T-10,6);
+        g.fillStyle(room.accent).fillRect(doorX*T+5,14*T,T-10,6);
+      }
+      if(index===0) { block(9,14,2,1); g.fillStyle(0x343b42).fillRect(9*T,14*T,2*T,T); }
+      if(index===9) { block(9,0,2,1); g.fillStyle(0x343b42).fillRect(9*T,0,2*T,T); }
+      torch(1,3);torch(18,3);torch(1,11);torch(18,11);
+
+      // Ten room-specific prop and collision layouts.
+      if(index===0) {
+        stone(3,4,3,2,0x4b5052);stone(14,4,3,2,0x4b5052);
+        for(let x=4;x<16;x+=2){g.fillStyle(0x252c33).fillRect(x*T+19,2*T,8,2*T);g.fillStyle(0x778087).fillTriangle(x*T+15,2*T,x*T+31,2*T,x*T+23,2*T-18);}
+        [[4,10],[15,10]].forEach(([x,y])=>{block(x,y);g.fillStyle(0x56595a).fillCircle(x*T+24,y*T+28,25);g.fillStyle(0x828077).fillRect(x*T+7,y*T+23,34,14);});
+      } else if(index===1) {
+        [[2,3],[2,6],[2,9],[15,3],[15,6],[15,9]].forEach(([x,y])=>{wood(x,y,3,1);g.fillStyle(0x9a8769).fillRect(x*T+13,y*T+10,29,T-20);g.fillStyle(0x7b3f43).fillRect(x*T+45,y*T+10,2*T-57,T-20);});
+        g.fillStyle(room.accent).fillRect(7*T+8,5*T,6*T-16,5*T);g.lineStyle(6,0x343039).strokeRect(7*T+8,5*T,6*T-16,5*T);
+      } else if(index===2) {
+        for(const y of [5,8,11]){wood(4,y,4,1);wood(12,y,4,1);}
+        stone(8,2,4,2,0x56565f);
+        g.fillStyle(0xe5d290,0.23).fillTriangle(7*T,0,13*T,0,11*T,10*T);
+        g.fillStyle(0x76558f).fillCircle(10*T,3*T,23);g.fillStyle(0xffd166).fillCircle(10*T,3*T,9);
+      } else if(index===3) {
+        for(let y=2;y<13;y++) for(const x of [2,3,4,15,16,17]) {
+          block(x,y);g.fillStyle((x+y)%2?0x2d5e70:0x316b7c).fillRect(x*T,y*T,T,T);
+          g.fillStyle(0x8dc7be,0.5).fillRect(x*T+7,y*T+17,27,3);
+        }
+        stone(6,5,2,2,0x51595b);stone(12,8,2,2,0x51595b);
+        for(let y=1;y<14;y++) g.fillStyle(0xa49b7f).fillRect(9*T+8,y*T,2*T-16,T);
+      } else if(index===4) {
+        for(const x of [2,6,14,18]) g.fillStyle(0x7d8584).fillRect(x*T,2*T,5,10*T);
+        for(const y of [3,7,11]) {
+          g.fillStyle(0x2a3036).fillRect(T,y*T,6*T,T);g.fillRect(13*T,y*T,6*T,T);
+          for(let x=1;x<7;x++){block(x,y);g.fillStyle(0x858c89).fillRect(x*T+9,y*T,4,T);}
+          for(let x=13;x<19;x++){block(x,y);g.fillStyle(0x858c89).fillRect(x*T+9,y*T,4,T);}
+        }
+        g.fillStyle(0xb7aa83).fillRect(8*T+8,7*T+11,4*T-16,28);
+      } else if(index===5) {
+        [[2,3],[2,8],[15,3],[15,8]].forEach(([x,y])=>wood(x,y,3,2));
+        [[7,4],[12,4],[7,9],[12,9]].forEach(([x,y])=>{block(x,y);g.fillStyle(0x353b42).fillRect(x*T+8,y*T+6,T-16,T-12);g.fillStyle(0xb7bdad).fillTriangle(x*T+12,y*T+35,x*T+24,y*T+2,x*T+36,y*T+35);});
+        g.fillStyle(0xa84b4b).fillRect(9*T,2*T,2*T,3*T);g.fillStyle(0xe6b85c).fillCircle(10*T,3*T,18);
+      } else if(index===6) {
+        stone(2,3,4,3,0x4c4945);stone(14,3,4,3,0x4c4945);
+        g.fillStyle(0x1e252b).fillRect(2*T+17,4*T,3*T-34,T);g.fillStyle(0xd9553f).fillRect(2*T+25,5*T-18,3*T-50,8);
+        wood(6,7,8,2);
+        for(let x=7;x<14;x+=2){g.fillStyle(0xd7c08d).fillEllipse(x*T+24,7*T+24,25,13);g.fillStyle(0x9c493f).fillEllipse(x*T+24,8*T+11,19,10);}
+        [[4,10],[15,10]].forEach(([x,y])=>{block(x,y);g.fillStyle(0x815037).fillEllipse(x*T+24,y*T+26,42,46);g.fillStyle(0x30363d).fillRect(x*T+5,y*T+16,T-10,5);});
+      } else if(index===7) {
+        [[2,2],[2,6],[2,10],[16,2],[16,6],[16,10]].forEach(([x,y])=>{wood(x,y,2,3);for(let r=0;r<3;r++){g.fillStyle(r%2?0x76558f:0xa84b4b).fillRect(x*T+13,(y+r)*T+11,9,27);g.fillStyle(0x477b9d).fillRect(x*T+27,(y+r)*T+15,8,23);}});
+        g.lineStyle(7,0x76558f,0.8).strokeCircle(10*T,7*T+24,82);
+        g.lineStyle(3,0xd3a8f0).strokeCircle(10*T,7*T+24,52);
+        for(let i=0;i<8;i++){const a=i*Math.PI/4;g.fillStyle(0xe1c6f2).fillCircle(10*T+Math.cos(a)*66,7*T+24+Math.sin(a)*66,5);}
+      } else if(index===8) {
+        wood(5,5,10,4);
+        g.fillStyle(0xc6ad78).fillRect(5*T+16,5*T+15,10*T-32,4*T-30);
+        g.lineStyle(4,0x477b9d).lineBetween(6*T,6*T,13*T,8*T);
+        g.lineStyle(4,0xa84b4b).lineBetween(7*T,8*T,14*T,6*T);
+        [[3,3],[16,3],[3,11],[16,11]].forEach(([x,y])=>{block(x,y);g.fillStyle(0x704536).fillRect(x*T+9,y*T+7,T-18,T-7);g.fillStyle(0x303640).fillCircle(x*T+24,y*T+19,13);});
+        g.fillStyle(0xa84b4b).fillRect(7*T,T,2*T,3*T);g.fillStyle(0x26334d).fillRect(11*T,T,2*T,3*T);
+      } else {
+        stone(6,1,8,3,0x363b42);
+        g.fillStyle(0x8f343c).fillRect(7*T+8,T,2*T-16,3*T);
+        g.fillStyle(0x8f343c).fillRect(11*T+8,T,2*T-16,3*T);
+        g.fillStyle(0xe6b85c).fillTriangle(8*T,3*T,9*T,1*T,10*T,3*T);
+        [[4,6],[15,6],[4,11],[15,11]].forEach(([x,y])=>{stone(x,y,1,1,0x555b60);g.fillStyle(0xd9553f).fillTriangle(x*T+8,y*T,x*T+24,y*T-35,x*T+40,y*T);g.fillStyle(0xffd166).fillTriangle(x*T+16,y*T-3,x*T+24,y*T-25,x*T+32,y*T-3);});
+        g.fillStyle(0x6f2630).fillRect(6*T+8,9*T,8*T-16,2*T);
+        g.lineStyle(5,0xe6b85c).strokeRect(6*T+14,9*T+6,8*T-28,2*T-12);
+      }
+
+      const cleared=this.save.clearedRooms.includes(index);
+      if(!cleared) {
+        const encounters=[
+          [["goblin",6,7,8,2],["goblin",13,7,8,2]],
+          [["goblin",7,5,9,2],["goblin",12,10,9,2]],
+          [["orc",10,6,14,3]],
+          [["goblin",8,6,10,2],["goblin",11,9,10,2]],
+          [["orc",10,6,15,3],["goblin",10,10,10,2]],
+          [["orc",7,7,16,3],["orc",13,7,16,3]],
+          [["goblin",7,5,11,2],["goblin",13,10,11,2]],
+          [["orc",10,5,17,3],["goblin",10,10,12,2]],
+          [["orc",7,11,18,4],["orc",13,11,18,4]],
+          [["orc",6,8,18,4],["orc",14,8,18,4],["hobgoblin",10,4,30,5]]
+        ][index];
+        encounters.forEach(([type,x,y,hp,damage],i)=>{
+          const id=index===9&&type==="hobgoblin"?"varkul":"room-"+index+"-"+i;
+          const name=id==="varkul"?"Commander Varkul":(type==="orc"?"Ashfang Reaver":"Ashfang Goblin");
+          this.spawnEnemy(id,type,x,y,hp,damage,name);
+        });
+      }
+
       this.createCombatHero();
-      this.openDialogue([
-        "Greywatch Castle has become an Ashfang war camp.",
-        "COMMANDER VARKUL: The wizard promised us every village on this coast.",
-        "End the raid. Defeat Varkul."
-      ]);
+      const roomLabel=this.add.text(18,18,(index+1)+"/10  "+room.name,{
+        fontFamily:"Silkscreen, monospace",fontSize:"14px",color:"#ffefc1",
+        backgroundColor:"#182847",padding:{x:8,y:5}
+      }).setDepth(72).setScrollFactor(0);
+      if(!cleared) this.openDialogue([room.intro,index<9?"Defeat the guards, then take the northern passage.":"Defeat Varkul and end the Ashfang raid."]);
     }
 
     onCombatCleared() {
@@ -1696,9 +1835,22 @@
           "Through the trees, Greywatch's shattered gate stands open.",
           "You tighten your grip and enter the abandoned castle."
         ],()=>this.buildCastle());
-      } else if(this.area==="castle") {
-        this.save.gameComplete=true; this.save.chapterStage="complete"; saveGame(this.save);
-        this.showEnding();
+      } else if(this.area==="dungeon") {
+        if(!Array.isArray(this.save.clearedRooms)) this.save.clearedRooms=[];
+        if(!this.save.clearedRooms.includes(this.dungeonRoom)) this.save.clearedRooms.push(this.dungeonRoom);
+        this.save.dungeonRoom=this.dungeonRoom;
+        this.save.playerHp=this.playerHp;
+        saveGame(this.save);
+        if(this.dungeonRoom===9) {
+          this.save.gameComplete=true; this.save.chapterStage="complete"; saveGame(this.save);
+          this.showEnding();
+        } else {
+          this.openDialogue([
+            "The room falls silent.",
+            "The northern passage is now clear.",
+            "Greywatch continues deeper into the rock."
+          ]);
+        }
       }
     }
 
@@ -1706,6 +1858,7 @@
       this.save.playerHp=this.getClassStats().hp; saveGame(this.save);
       if(this.area==="raid") this.buildRaid();
       else if(this.area==="road") this.buildRoad();
+      else if(this.area==="dungeon") this.buildDungeonRoom(this.dungeonRoom,"south");
       else this.buildCastle();
     }
 
