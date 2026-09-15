@@ -42,7 +42,7 @@
       id: "rogue", name: "Tess Quick", className: "Rogue",
       x: 16, y: 10, color: COLORS.purple,
       intro: ["TESS: Adulthood? Sounds expensive.", "You're quick, quiet, and clever when you need to be.", "I could teach you which locks deserve opening."],
-      boon: "Twin Knives · Quickstep · 11 HP"
+      boon: "Twin Knives · Sneak Attack · 14 HP"
     },
     {
       id: "cleric", name: "Sister Elowen", className: "Cleric",
@@ -1005,7 +1005,7 @@
       const stats = {
         Fighter: { hp: 18, damage: 5, armor: 2, skill: "Second Wind" },
         Ranger: { hp: 15, damage: 5, armor: 1, skill: "Hunter's Mark" },
-        Rogue: { hp: 14, damage: 6, armor: 1, skill: "Quickstep" },
+        Rogue: { hp: 14, damage: 6, armor: 1, skill: "Sneak Attack" },
         Cleric: { hp: 16, damage: 4, armor: 1, skill: "Healing Light" },
         Wizard: { hp: 12, damage: 7, armor: 0, skill: "Magic Missile" }
       };
@@ -1317,7 +1317,7 @@
 
     getAbilityName() {
       return {
-        Fighter:"2ND WIND", Ranger:"MARK", Rogue:"QUICKSTEP",
+        Fighter:"2ND WIND", Ranger:"MARK", Rogue:"SNEAK ATK",
         Cleric:"HEALING", Wizard:"MAGIC MISS."
       }[this.save.className] || "GUARD";
     }
@@ -1370,7 +1370,7 @@
         target.marked=true;
         this.abilityStrike(target,4,true);
       } else if (className === "Rogue") {
-        this.abilityStrike(target,6,false);
+        this.abilityStrike(target,this.getClassStats().damage*2,true);
       } else {
         this.magicMissile(target);
       }
