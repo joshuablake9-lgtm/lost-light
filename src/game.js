@@ -84,6 +84,10 @@
       this.objective = "";
       this.playerHp = 0;
       this.playerMaxHp = 0;
+      this.battleTarget = null;
+      this.battleIndex = 0;
+      this.battleMenu = "main";
+      this.battleUi = [];
       this.save = loadSave();
     }
 
@@ -182,9 +186,73 @@
       makePerson("villager-a", 0x7c5b8f, 0x4b302a, "villager");
       makePerson("villager-b", 0x477b9d, 0xb88755, "villager");
       makePerson("villager-c", 0x5f8b62, 0x372d2c, "villager");
-      makePerson("goblin", 0x64734d, 0x26322d, "rogue");
-      makePerson("orc", 0x6f7d55, 0x302b2a, "fighter");
-      makePerson("hobgoblin", 0xa84b4b, 0x20252e, "fighter");
+      const makeMonster = (key, kind) => {
+        ["down", "up", "side"].forEach(direction => {
+          const g = this.make.graphics({ add: false });
+          const outline = 0x172234;
+          const skin = kind === "goblin" ? 0x73964e : (kind === "orc" ? 0x71805a : 0x9c6047);
+          const skinLight = kind === "goblin" ? 0x9fbd63 : (kind === "orc" ? 0x93a66b : 0xc17a55);
+          const cloth = kind === "goblin" ? 0x6d4937 : (kind === "orc" ? 0x4e3c35 : 0x8f343c);
+          const armor = kind === "hobgoblin" ? 0x596675 : 0x4b443e;
+          const broad = kind !== "goblin";
+
+          g.fillStyle(0x101827, 0.45).fillEllipse(12, 29, broad ? 19 : 16, 4);
+          // Bent legs and oversized clawed feet.
+          g.fillStyle(outline).fillRect(broad ? 4 : 6, 23, 7, 7).fillRect(13, 23, 7, 7);
+          g.fillStyle(0x342d2b).fillRect(broad ? 2 : 4, 28, 9, 3).fillRect(13, 28, 9, 3);
+          // Ragged body or plated hobgoblin cuirass.
+          g.fillStyle(outline).fillRect(broad ? 3 : 5, 14, broad ? 18 : 14, 12);
+          g.fillStyle(cloth).fillRect(broad ? 4 : 6, 16, broad ? 16 : 12, 9);
+          g.fillStyle(armor).fillRect(broad ? 5 : 7, 15, broad ? 14 : 10, kind === "hobgoblin" ? 7 : 3);
+          if (kind === "hobgoblin") {
+            g.fillStyle(0xb7bdad).fillRect(6, 16, 12, 2).fillRect(11, 14, 2, 10);
+            g.fillStyle(0xe6b85c).fillRect(10, 19, 4, 4);
+          }
+          // Long arms, crude weapon and buckler.
+          g.fillStyle(outline).fillRect(1, 15, 5, 10).fillRect(18, 15, 5, 10);
+          g.fillStyle(skin).fillRect(2, 16, 4, 7).fillRect(18, 16, 4, 7);
+          if (direction !== "up") {
+            g.fillStyle(0xb8c1b3).fillTriangle(22, 13, 19, 23, 23, 21);
+            g.fillStyle(0x5a392f).fillRect(20, 21, 2, 9);
+            if (kind !== "goblin") {
+              g.fillStyle(0x303943).fillCircle(3, 21, 6);
+              g.fillStyle(0x89948d).fillCircle(3, 21, 3);
+            }
+          }
+          // Distinct head: huge goblin ears/nose; tusked orc; crested hobgoblin.
+          g.fillStyle(outline).fillEllipse(12, 9, broad ? 17 : 15, 14);
+          if (kind === "goblin") {
+            g.fillStyle(outline).fillTriangle(5, 7, 0, 2, 3, 13).fillTriangle(19, 7, 24, 2, 21, 13);
+            g.fillStyle(skin).fillTriangle(6, 7, 1, 4, 4, 12).fillTriangle(18, 7, 23, 4, 20, 12);
+          } else {
+            g.fillStyle(outline).fillRect(2, 5, 4, 9).fillRect(18, 5, 4, 9);
+            g.fillStyle(skin).fillRect(3, 6, 3, 7).fillRect(18, 6, 3, 7);
+          }
+          g.fillStyle(skin).fillEllipse(12, 9, broad ? 14 : 12, 12);
+          g.fillStyle(skinLight).fillRect(7, 6, broad ? 10 : 8, 3);
+          if (direction === "down" || direction === "side") {
+            g.fillStyle(0xf4d66d).fillRect(direction === "side" ? 14 : 7, 8, 3, 3);
+            if (direction === "down") g.fillRect(14, 8, 3, 3);
+            g.fillStyle(0x182847).fillRect(direction === "side" ? 15 : 8, 9, 2, 2);
+            if (direction === "down") g.fillRect(15, 9, 2, 2);
+            if (kind === "goblin") {
+              g.fillStyle(skinLight).fillTriangle(10, 10, 12, 17, 15, 11);
+              g.fillStyle(0x35282a).fillRect(9, 14, 7, 2);
+            } else {
+              g.fillStyle(0xf3e1b0).fillTriangle(7, 13, 9, 17, 11, 13).fillTriangle(14, 13, 16, 17, 18, 13);
+            }
+          }
+          if (kind === "hobgoblin") {
+            g.fillStyle(0x222837).fillRect(7, 1, 10, 3);
+            g.fillStyle(0xb83f42).fillRect(10, 0, 4, 5);
+          }
+          g.generateTexture(key + "-" + direction, 24, 32);
+          g.destroy();
+        });
+      };
+      makeMonster("goblin", "goblin");
+      makeMonster("orc", "orc");
+      makeMonster("hobgoblin", "hobgoblin");
 
       const flame = this.make.graphics({ add: false });
       flame.fillStyle(COLORS.red).fillRect(4, 7, 8, 8);
@@ -885,6 +953,8 @@
       this.save.className = npc.className;
       this.save.mentor = npc.name;
       this.save.startedAt = new Date().toISOString();
+      this.save.healingDraughts = 3;
+      this.save.smokeBombs = 1;
       saveGame(this.save);
       this.clearChoice();
       this.openDialogue([
@@ -982,7 +1052,7 @@
       const stats = this.getClassStats();
       this.hudText = this.text(
         4, 127,
-        "HP " + this.playerHp + "/" + this.playerMaxHp + "  ·  " + stats.skill + "  ·  FOES " + this.enemies.length,
+        "HP " + this.playerHp + "/" + this.playerMaxHp + " · POT " + (this.save.healingDraughts || 0) + " · FOES " + this.enemies.length,
         5, "#ffefc1"
       ).setDepth(70);
     }
@@ -1080,10 +1150,150 @@
       const tx=this.heroTile.x+this.facing.x, ty=this.heroTile.y+this.facing.y;
       const enemy=this.enemies.find(e=>e.x===tx&&e.y===ty);
       if (enemy) {
-        this.attackEnemy(enemy);
+        this.openBattleMenu(enemy);
         return true;
       }
       return false;
+    }
+
+    ensureInventory() {
+      if (typeof this.save.healingDraughts !== "number") this.save.healingDraughts = 3;
+      if (typeof this.save.smokeBombs !== "number") this.save.smokeBombs = 1;
+    }
+
+    openBattleMenu(enemy) {
+      this.ensureInventory();
+      this.battleTarget = enemy;
+      this.battleMenu = "main";
+      this.battleIndex = 0;
+      this.mode = "battle";
+      this.busy = true;
+      this.renderBattleMenu();
+    }
+
+    clearBattleMenu(returnToWorld = true) {
+      this.battleUi.forEach(x => x && x.destroy());
+      this.battleUi = [];
+      if (returnToWorld) {
+        this.mode = "world";
+        this.busy = false;
+      }
+    }
+
+    renderBattleMenu(message = "") {
+      this.clearBattleMenu(false);
+      const enemy = this.battleTarget;
+      if (!enemy || enemy.hp <= 0) {
+        this.mode = "world";
+        this.busy = false;
+        return;
+      }
+      const panel = this.add.graphics().setDepth(80).setScrollFactor(0);
+      panel.fillStyle(0x101827, 0.96).fillRect(18, 40, 444, 330);
+      panel.lineStyle(6, COLORS.cream).strokeRect(18, 40, 444, 330);
+      panel.lineStyle(3, COLORS.gold).strokeRect(26, 48, 428, 314);
+      this.battleUi.push(panel);
+
+      const title = this.add.text(42, 63, enemy.name.toUpperCase(), {
+        fontFamily: "Silkscreen, monospace", fontSize: "20px", color: "#ffd166"
+      }).setDepth(81).setScrollFactor(0);
+      const hp = this.add.text(42, 96, "FOE HP  " + Math.max(0,enemy.hp) + " / " + enemy.maxHp +
+        "\nYOUR HP " + this.playerHp + " / " + this.playerMaxHp, {
+        fontFamily: "Silkscreen, monospace", fontSize: "17px", color: "#fff7d6", lineSpacing: 8
+      }).setDepth(81).setScrollFactor(0);
+      this.battleUi.push(title,hp);
+
+      const options = this.battleMenu === "items"
+        ? ["HEALING DRAUGHT ×" + this.save.healingDraughts, "SMOKE BOMB ×" + this.save.smokeBombs, "BACK"]
+        : ["ATTACK", "ITEM", "RUN"];
+      options.forEach((option,index) => {
+        const selected=index===this.battleIndex;
+        const t=this.add.text(68, 178+index*48, (selected ? "▶ " : "  ")+option, {
+          fontFamily:"Silkscreen, monospace", fontSize:"20px",
+          color:selected ? "#ffd166" : "#b7d1b0"
+        }).setDepth(81).setScrollFactor(0);
+        this.battleUi.push(t);
+      });
+      const hint=this.add.text(42,335,message || "ARROWS: CHOOSE   Z: CONFIRM   X: BACK",{
+        fontFamily:"Silkscreen, monospace",fontSize:"12px",color:message ? "#ff9b8f" : "#89a39a"
+      }).setDepth(81).setScrollFactor(0);
+      this.battleUi.push(hint);
+    }
+
+    moveBattleCursor(direction) {
+      const count=3;
+      this.battleIndex=(this.battleIndex+direction+count)%count;
+      this.renderBattleMenu();
+    }
+
+    chooseBattleAction() {
+      if (this.battleMenu === "items") {
+        if (this.battleIndex === 0) return this.useHealingDraught();
+        if (this.battleIndex === 1) return this.useSmokeBomb();
+        this.battleMenu="main"; this.battleIndex=1; this.renderBattleMenu();
+        return;
+      }
+      if (this.battleIndex === 0) {
+        const target=this.battleTarget;
+        this.clearBattleMenu(true);
+        this.attackEnemy(target);
+      } else if (this.battleIndex === 1) {
+        this.battleMenu="items"; this.battleIndex=0; this.renderBattleMenu();
+      } else this.attemptRun(false);
+    }
+
+    useHealingDraught() {
+      if (this.save.healingDraughts <= 0) {
+        this.renderBattleMenu("YOUR PACK HOLDS NO HEALING DRAUGHTS.");
+        return;
+      }
+      if (this.playerHp >= this.playerMaxHp) {
+        this.renderBattleMenu("YOU ARE ALREADY AT FULL HEALTH.");
+        return;
+      }
+      this.save.healingDraughts--;
+      this.playerHp=Math.min(this.playerMaxHp,this.playerHp+8);
+      this.save.playerHp=this.playerHp;
+      saveGame(this.save);
+      this.clearBattleMenu(true);
+      this.updateHud();
+      this.enemyTurn();
+    }
+
+    useSmokeBomb() {
+      if (this.save.smokeBombs <= 0) {
+        this.renderBattleMenu("YOU HAVE NO SMOKE BOMBS.");
+        return;
+      }
+      if (this.battleTarget.id === "varkul") {
+        this.renderBattleMenu("VARKUL SWEEPS THE SMOKE ASIDE.");
+        return;
+      }
+      this.save.smokeBombs--;
+      saveGame(this.save);
+      this.attemptRun(true);
+    }
+
+    attemptRun(usingSmoke) {
+      if (this.battleTarget.id === "varkul") {
+        this.renderBattleMenu("THERE IS NO ESCAPE FROM THE COMMANDER.");
+        return;
+      }
+      const backX=this.heroTile.x-this.facing.x;
+      const backY=this.heroTile.y-this.facing.y;
+      if (this.blocked.has(backX+","+backY)) {
+        this.renderBattleMenu("YOUR RETREAT IS BLOCKED.");
+        return;
+      }
+      this.clearBattleMenu(true);
+      this.heroTile={x:backX,y:backY};
+      this.hero.setPosition(backX*TILE+24,backY*TILE+12);
+      if (!usingSmoke) {
+        this.playerHp=Math.max(1,this.playerHp-1);
+        this.save.playerHp=this.playerHp;
+        saveGame(this.save);
+      }
+      this.updateHud();
     }
 
     beginRaid() {
@@ -1269,6 +1479,18 @@
           localStorage.removeItem(SAVE_KEY);
           this.save = {};
           this.showTitle();
+        }
+        return;
+      }
+
+      if (this.mode === "battle") {
+        if (this.pressed(this.keys.up, this.keys.w)) this.moveBattleCursor(-1);
+        else if (this.pressed(this.keys.down, this.keys.s)) this.moveBattleCursor(1);
+        else if (this.pressed(this.keys.z, this.keys.enter, this.keys.space)) this.chooseBattleAction();
+        else if (this.pressed(this.keys.x, this.keys.esc)) {
+          if (this.battleMenu === "items") {
+            this.battleMenu="main"; this.battleIndex=1; this.renderBattleMenu();
+          } else this.attemptRun(false);
         }
         return;
       }
