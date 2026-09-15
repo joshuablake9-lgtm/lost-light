@@ -1188,36 +1188,99 @@
         this.busy = false;
         return;
       }
+
       const panel = this.add.graphics().setDepth(80).setScrollFactor(0);
-      panel.fillStyle(0x101827, 0.96).fillRect(18, 40, 444, 330);
-      panel.lineStyle(6, COLORS.cream).strokeRect(18, 40, 444, 330);
-      panel.lineStyle(3, COLORS.gold).strokeRect(26, 48, 428, 314);
+      const palette = this.area === "castle"
+        ? { sky: 0x303844, far: 0x46515b, ground: 0x626765, light: 0x89908a }
+        : (this.area === "road"
+          ? { sky: 0x8eb59a, far: 0x52765a, ground: 0x6f8b58, light: 0xa9bd79 }
+          : { sky: 0xd69b68, far: 0x7b704f, ground: 0x84925b, light: 0xd5bd72 });
+
+      // Full-screen handheld battle arena with layered depth.
+      panel.fillStyle(palette.sky).fillRect(0, 0, WIDTH, 306);
+      panel.fillStyle(0xffefc1, 0.16).fillRect(0, 0, WIDTH, 58);
+      panel.fillStyle(palette.far).fillTriangle(0, 208, 88, 90, 174, 208);
+      panel.fillTriangle(105, 208, 236, 72, 350, 208);
+      panel.fillTriangle(278, 208, 395, 102, 480, 208);
+      panel.fillStyle(palette.light, 0.7).fillTriangle(52, 148, 88, 90, 121, 151);
+      panel.fillTriangle(185, 125, 236, 72, 282, 128);
+      panel.fillStyle(palette.ground).fillRect(0, 188, WIDTH, 118);
+      for (let x=0; x<WIDTH; x+=32) {
+        panel.fillStyle(x%64===0 ? palette.light : palette.far, 0.38).fillRect(x, 238+(x%3)*7, 19, 4);
+      }
+
+      // Opposing combat platforms.
+      panel.fillStyle(0x182847,0.3).fillEllipse(359,172,184,42);
+      panel.fillStyle(palette.light).fillEllipse(359,164,174,35);
+      panel.fillStyle(palette.ground).fillEllipse(359,158,146,24);
+      panel.fillStyle(0x182847,0.34).fillEllipse(112,286,211,49);
+      panel.fillStyle(palette.light).fillEllipse(112,278,202,41);
+      panel.fillStyle(palette.ground).fillEllipse(112,270,169,29);
+
+      // Bottom dialogue and command frames.
+      panel.fillStyle(0x101827).fillRect(0,306,WIDTH,126);
+      panel.lineStyle(5,COLORS.cream).strokeRect(8,313,258,111);
+      panel.lineStyle(5,COLORS.cream).strokeRect(273,313,199,111);
+      panel.lineStyle(2,COLORS.gold).strokeRect(14,319,246,99);
+      panel.lineStyle(2,COLORS.gold).strokeRect(279,319,187,99);
+
+      // Status cards and health bars.
+      panel.fillStyle(0xffefc1).fillRect(16,22,223,69);
+      panel.fillStyle(0x182847).fillRect(21,27,213,59);
+      panel.lineStyle(3,COLORS.gold).strokeRect(19,25,217,63);
+      panel.fillStyle(0xffefc1).fillRect(245,202,219,76);
+      panel.fillStyle(0x182847).fillRect(250,207,209,66);
+      panel.lineStyle(3,COLORS.gold).strokeRect(248,205,213,70);
+
+      const enemyRatio=Math.max(0,enemy.hp)/enemy.maxHp;
+      const heroRatio=Math.max(0,this.playerHp)/this.playerMaxHp;
+      const hpColor=ratio=>ratio>0.5?0x74a85e:(ratio>0.25?0xe6b85c:0xc94f4f);
+      panel.fillStyle(0x3b4050).fillRect(86,65,137,10);
+      panel.fillStyle(hpColor(enemyRatio)).fillRect(88,67,133*enemyRatio,6);
+      panel.fillStyle(0x3b4050).fillRect(309,245,137,10);
+      panel.fillStyle(hpColor(heroRatio)).fillRect(311,247,133*heroRatio,6);
       this.battleUi.push(panel);
 
-      const title = this.add.text(42, 63, enemy.name.toUpperCase(), {
-        fontFamily: "Silkscreen, monospace", fontSize: "20px", color: "#ffd166"
-      }).setDepth(81).setScrollFactor(0);
-      const hp = this.add.text(42, 96, "FOE HP  " + Math.max(0,enemy.hp) + " / " + enemy.maxHp +
-        "\nYOUR HP " + this.playerHp + " / " + this.playerMaxHp, {
-        fontFamily: "Silkscreen, monospace", fontSize: "17px", color: "#fff7d6", lineSpacing: 8
-      }).setDepth(81).setScrollFactor(0);
-      this.battleUi.push(title,hp);
+      const enemySprite=this.add.sprite(359,130,enemy.type+"-side")
+        .setDepth(82).setScrollFactor(0).setScale(4.8).setFlipX(true);
+      const heroSprite=this.add.sprite(112,236,"hero-up")
+        .setDepth(82).setScrollFactor(0).setScale(5.2);
+      this.battleUi.push(enemySprite,heroSprite);
 
-      const options = this.battleMenu === "items"
-        ? ["HEALING DRAUGHT ×" + this.save.healingDraughts, "SMOKE BOMB ×" + this.save.smokeBombs, "BACK"]
-        : ["ATTACK", "ITEM", "RUN"];
-      options.forEach((option,index) => {
+      const style=(size,color="#fff7d6")=>({
+        fontFamily:"Silkscreen, monospace",fontSize:size+"px",color
+      });
+      const foeName=this.add.text(31,34,enemy.name.toUpperCase(),style(15,"#ffd166"))
+        .setDepth(83).setScrollFactor(0);
+      const foeHp=this.add.text(31,61,"HP",style(12)).setDepth(83).setScrollFactor(0);
+      const heroName=this.add.text(261,216,(this.save.className||"HERO").toUpperCase(),style(15,"#ffd166"))
+        .setDepth(83).setScrollFactor(0);
+      const heroHp=this.add.text(261,242,"HP",style(12)).setDepth(83).setScrollFactor(0);
+      const heroNumbers=this.add.text(435,258,this.playerHp+"/"+this.playerMaxHp,style(11))
+        .setOrigin(1,0).setDepth(83).setScrollFactor(0);
+      this.battleUi.push(foeName,foeHp,heroName,heroHp,heroNumbers);
+
+      const promptText=message || (this.battleMenu==="items"
+        ? "Choose an item."
+        : "What will "+(this.save.className||"the hero")+" do?");
+      const prompt=this.add.text(25,330,this.wrap(promptText,24),style(15,message?"#ffb09f":"#fff7d6"))
+        .setDepth(83).setScrollFactor(0);
+      this.battleUi.push(prompt);
+
+      const options=this.battleMenu==="items"
+        ? ["DRAUGHT ×"+this.save.healingDraughts,"SMOKE ×"+this.save.smokeBombs,"BACK"]
+        : ["ATTACK","ITEM","RUN"];
+      const positions=this.battleMenu==="items"
+        ? [[292,329],[292,361],[292,393]]
+        : [[292,337],[390,337],[292,381]];
+      options.forEach((option,index)=>{
         const selected=index===this.battleIndex;
-        const t=this.add.text(68, 178+index*48, (selected ? "▶ " : "  ")+option, {
-          fontFamily:"Silkscreen, monospace", fontSize:"20px",
-          color:selected ? "#ffd166" : "#b7d1b0"
-        }).setDepth(81).setScrollFactor(0);
+        const [x,y]=positions[index];
+        const t=this.add.text(x,y,(selected?"▶ ":"  ")+option,style(
+          this.battleMenu==="items"?13:15,selected?"#ffd166":"#b7d1b0"
+        )).setDepth(83).setScrollFactor(0);
         this.battleUi.push(t);
       });
-      const hint=this.add.text(42,335,message || "ARROWS: CHOOSE   Z: CONFIRM   X: BACK",{
-        fontFamily:"Silkscreen, monospace",fontSize:"12px",color:message ? "#ff9b8f" : "#89a39a"
-      }).setDepth(81).setScrollFactor(0);
-      this.battleUi.push(hint);
     }
 
     moveBattleCursor(direction) {
