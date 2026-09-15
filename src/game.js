@@ -30,7 +30,7 @@
       id: "fighter", name: "Captain Brann", className: "Fighter",
       x: 4, y: 6, color: COLORS.red,
       intro: ["BRANN: Eighteen at last.", "You have a steady guard and a brave heart.", "Train with me today and carry Dunmere's shield."],
-      boon: "Longsword · Guard Stance · 14 HP"
+      boon: "Longsword · Second Wind · 18 HP"
     },
     {
       id: "ranger", name: "Mira Vale", className: "Ranger",
@@ -54,7 +54,7 @@
       id: "wizard", name: "Orin Fen", className: "Wizard",
       x: 12, y: 8, color: COLORS.blue,
       intro: ["ORIN: Your heirloom stirred last night.", "There is an unanswered question in you.", "Study with me and give that question a voice."],
-      boon: "Oak Wand · Ember Bolt · 9 HP"
+      boon: "Oak Wand · Magic Missile · 12 HP"
     }
   ];
 
@@ -1003,11 +1003,11 @@
 
     getClassStats() {
       const stats = {
-        Fighter: { hp: 18, damage: 5, armor: 2, skill: "Guard" },
+        Fighter: { hp: 18, damage: 5, armor: 2, skill: "Second Wind" },
         Ranger: { hp: 15, damage: 5, armor: 1, skill: "Hunter's Mark" },
         Rogue: { hp: 14, damage: 6, armor: 1, skill: "Quickstep" },
         Cleric: { hp: 16, damage: 4, armor: 1, skill: "Healing Light" },
-        Wizard: { hp: 12, damage: 7, armor: 0, skill: "Ember Bolt" }
+        Wizard: { hp: 12, damage: 7, armor: 0, skill: "Magic Missile" }
       };
       return stats[this.save.className] || stats.Fighter;
     }
@@ -1317,8 +1317,8 @@
 
     getAbilityName() {
       return {
-        Fighter:"GUARD", Ranger:"MARK", Rogue:"QUICKSTEP",
-        Cleric:"HEALING", Wizard:"EMBER BOLT"
+        Fighter:"2ND WIND", Ranger:"MARK", Rogue:"QUICKSTEP",
+        Cleric:"HEALING", Wizard:"MAGIC MISS."
       }[this.save.className] || "GUARD";
     }
 
@@ -1336,9 +1336,16 @@
       const target=this.battleTarget;
 
       if (className === "Fighter") {
+        if (this.playerHp >= this.playerMaxHp) {
+          this.renderBattleMenu("SECOND WIND IS NOT NEEDED AT FULL HEALTH.");
+          return;
+        }
         this.spendAbilityUse();
-        this.guarding=true;
+        this.playerHp=Math.min(this.playerMaxHp,this.playerHp+Math.ceil(this.playerMaxHp/2));
+        this.save.playerHp=this.playerHp;
+        saveGame(this.save);
         this.clearBattleMenu(true);
+        this.updateHud();
         this.enemyTurn();
         return;
       }
@@ -1365,8 +1372,34 @@
       } else if (className === "Rogue") {
         this.abilityStrike(target,6,false);
       } else {
-        this.abilityStrike(target,10,true);
+        this.magicMissile(target);
       }
+    }
+
+    magicMissile(enemy) {
+      this.clearBattleMenu(true);
+      this.busy=true;
+      for(let bolt=0;bolt<3;bolt++) {
+        const orb=this.add.circle(this.hero.x+bolt*8-8,this.hero.y-18,6,0xbda7ff)
+          .setDepth(40);
+        orb.setStrokeStyle(2,0xffefc1);
+        this.tweens.add({
+          targets:orb,
+          x:enemy.sprite.x+(bolt-1)*7,
+          y:enemy.sprite.y-10+(bolt%2)*8,
+          duration:180,
+          delay:bolt*95,
+          ease:"Sine.easeIn",
+          onComplete:()=>{
+            orb.destroy();
+            this.cameras.main.flash(45,170,130,255);
+          }
+        });
+      }
+      this.time.delayedCall(390,()=>{
+        this.busy=false;
+        this.abilityStrike(enemy,12,true);
+      });
     }
 
     abilityStrike(enemy, damage, enemyActs) {
