@@ -361,6 +361,7 @@
     }
 
     startGame() {
+      this.migrateLeveling();
       this.scale.resize(WIDTH, HEIGHT);
       this.cameras.main.setSize(WIDTH, HEIGHT);
       this.cameras.main.setViewport(0, 0, WIDTH, HEIGHT);
@@ -955,6 +956,7 @@
       this.save.startedAt = new Date().toISOString();
       this.save.level = 1;
       this.save.xp = 0;
+      this.save.levelingVersion = 2;
       this.save.healingDraughts = 3;
       this.save.smokeBombs = 1;
       saveGame(this.save);
@@ -1026,7 +1028,31 @@
     }
 
     xpToNext(level=this.save.level || 1) {
-      return level*25;
+      if(level===1) return 100;
+      if(level===2) return 250;
+      return 250+(level-2)*200;
+    }
+
+    migrateLeveling() {
+      if(!this.save.className || this.save.levelingVersion===2) return;
+      let earned=0;
+      if(this.save.raidCleared) earned+=40;
+      if(this.save.roadCleared) earned+=38;
+      const roomRewards=[20,20,18,20,28,36,20,28,36,81];
+      const cleared=Array.isArray(this.save.clearedRooms)?this.save.clearedRooms:[];
+      cleared.forEach(room=>{if(roomRewards[room]) earned+=roomRewards[room];});
+      let level=1, xp=earned;
+      while(level<10 && xp>=this.xpToNext(level)) {
+        xp-=this.xpToNext(level);
+        level++;
+      }
+      this.save.level=level;
+      this.save.xp=xp;
+      this.save.levelingVersion=2;
+      const stats=this.getClassStats();
+      this.save.playerHp=Math.min(this.save.playerHp || stats.hp,stats.hp);
+      this.save.playerMp=Math.min(this.save.playerMp || stats.mp || 0,stats.mp || 0);
+      saveGame(this.save);
     }
 
     gainExperience(enemy) {
