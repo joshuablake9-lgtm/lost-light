@@ -1006,8 +1006,8 @@
         Fighter: { hp: 18, damage: 5, armor: 2, skill: "Second Wind" },
         Ranger: { hp: 15, damage: 5, armor: 1, skill: "Hunter's Mark" },
         Rogue: { hp: 14, damage: 6, armor: 1, skill: "Sneak Attack" },
-        Cleric: { hp: 16, damage: 4, armor: 1, skill: "Healing Light" },
-        Wizard: { hp: 12, damage: 7, armor: 0, skill: "Magic Missile" }
+        Cleric: { hp: 16, damage: 4, armor: 1, skill: "Healing Light", mp: 6, abilityCost: 3 },
+        Wizard: { hp: 12, damage: 7, armor: 0, skill: "Magic Missile", mp: 9, abilityCost: 3 }
       };
       return stats[this.save.className] || stats.Fighter;
     }
@@ -1025,6 +1025,9 @@
       const stats = this.getClassStats();
       this.playerMaxHp = stats.hp;
       this.playerHp = Math.min(this.save.playerHp || stats.hp, stats.hp);
+      this.playerMaxMp = stats.mp || 0;
+      this.playerMp = this.playerMaxMp;
+      this.save.playerMp = this.playerMp;
     }
 
     addBoundaries() {
@@ -1053,7 +1056,9 @@
       const stats = this.getClassStats();
       this.hudText = this.text(
         4, 127,
-        "HP " + this.playerHp + "/" + this.playerMaxHp + " · POT " + (this.save.healingDraughts || 0) + " · FOES " + this.enemies.length,
+        "HP " + this.playerHp + "/" + this.playerMaxHp +
+          (this.playerMaxMp ? " · MP " + this.playerMp + "/" + this.playerMaxMp : "") +
+          " · POT " + (this.save.healingDraughts || 0) + " · FOES " + this.enemies.length,
         5, "#ffefc1"
       ).setDepth(70);
     }
@@ -1247,6 +1252,11 @@
       panel.fillStyle(hpColor(enemyRatio)).fillRect(88,67,133*enemyRatio,6);
       panel.fillStyle(0x3b4050).fillRect(309,245,137,10);
       panel.fillStyle(hpColor(heroRatio)).fillRect(311,247,133*heroRatio,6);
+      if (this.playerMaxMp) {
+        const mpRatio=Math.max(0,this.playerMp)/this.playerMaxMp;
+        panel.fillStyle(0x3b4050).fillRect(309,264,137,8);
+        panel.fillStyle(0x678ed1).fillRect(311,266,133*mpRatio,4);
+      }
       this.battleUi.push(panel);
 
       const enemySprite=this.add.sprite(359,130,enemy.type+"-side")
@@ -1263,10 +1273,16 @@
       const foeHp=this.add.text(31,61,"HP",style(12)).setDepth(83).setScrollFactor(0);
       const heroName=this.add.text(261,216,(this.save.className||"HERO").toUpperCase(),style(15,"#ffd166"))
         .setDepth(83).setScrollFactor(0);
-      const heroHp=this.add.text(261,242,"HP",style(12)).setDepth(83).setScrollFactor(0);
-      const heroNumbers=this.add.text(435,258,this.playerHp+"/"+this.playerMaxHp,style(11))
+      const heroHp=this.add.text(261,239,"HP",style(11)).setDepth(83).setScrollFactor(0);
+      const heroNumbers=this.add.text(447,239,this.playerHp+"/"+this.playerMaxHp,style(10))
         .setOrigin(1,0).setDepth(83).setScrollFactor(0);
       this.battleUi.push(foeName,foeHp,heroName,heroHp,heroNumbers);
+      if (this.playerMaxMp) {
+        const heroMp=this.add.text(261,258,"MP",style(11,"#9fc4ff")).setDepth(83).setScrollFactor(0);
+        const mpNumbers=this.add.text(447,258,this.playerMp+"/"+this.playerMaxMp,style(10,"#9fc4ff"))
+          .setOrigin(1,0).setDepth(83).setScrollFactor(0);
+        this.battleUi.push(heroMp,mpNumbers);
+      }
 
       const promptText=message || (this.battleMenu==="items"
         ? "Choose an item."
@@ -1277,7 +1293,7 @@
 
       const options=this.battleMenu==="items"
         ? ["DRAUGHT ×"+this.save.healingDraughts,"SMOKE ×"+this.save.smokeBombs,"BACK"]
-        : ["ATTACK",this.getAbilityName()+" ×"+this.abilityUses,"ITEM","RUN"];
+        : ["ATTACK",this.getAbilityMenuLabel(),"ITEM","RUN"];
       const positions=this.battleMenu==="items"
         ? [[292,329],[292,361],[292,393]]
         : [[292,325],[292,348],[292,371],[292,394]];
@@ -1317,18 +1333,36 @@
 
     getAbilityName() {
       return {
-        Fighter:"2ND WIND", Ranger:"MARK", Rogue:"SNEAK ATK",
-        Cleric:"HEALING", Wizard:"MAGIC MISS."
+        Fighter:"2ND WIND", Ranger:"MARK", Rogue:"SNEAK ATTACK",
+        Cleric:"HEALING LIGHT", Wizard:"MAGIC MISSILE"
       }[this.save.className] || "GUARD";
     }
 
+    getAbilityMenuLabel() {
+      const stats=this.getClassStats();
+      if (stats.mp) return this.getAbilityName()+" "+stats.abilityCost+"MP";
+      return this.getAbilityName()+" ×"+this.abilityUses;
+    }
+
     spendAbilityUse() {
-      this.abilityUses--;
-      this.battleTarget.abilityUses=this.abilityUses;
+      const stats=this.getClassStats();
+      if (stats.mp) {
+        this.playerMp=Math.max(0,this.playerMp-stats.abilityCost);
+        this.save.playerMp=this.playerMp;
+        saveGame(this.save);
+      } else {
+        this.abilityUses--;
+        this.battleTarget.abilityUses=this.abilityUses;
+      }
     }
 
     useClassAbility() {
-      if (this.abilityUses <= 0) {
+      const stats=this.getClassStats();
+      if (stats.mp && this.playerMp < stats.abilityCost) {
+        this.renderBattleMenu("NOT ENOUGH MP.");
+        return;
+      }
+      if (!stats.mp && this.abilityUses <= 0) {
         this.renderBattleMenu("YOU HAVE NO ABILITY USES LEFT.");
         return;
       }
