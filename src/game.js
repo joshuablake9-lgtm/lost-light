@@ -1280,12 +1280,12 @@
         : ["ATTACK",this.getAbilityName()+" ×"+this.abilityUses,"ITEM","RUN"];
       const positions=this.battleMenu==="items"
         ? [[292,329],[292,361],[292,393]]
-        : [[288,337],[374,337],[288,381],[374,381]];
+        : [[292,325],[292,348],[292,371],[292,394]];
       options.forEach((option,index)=>{
         const selected=index===this.battleIndex;
         const [x,y]=positions[index];
         const t=this.add.text(x,y,(selected?"▶ ":"  ")+option,style(
-          this.battleMenu==="items"?13:12,selected?"#ffd166":"#b7d1b0"
+          this.battleMenu==="items"?13:11,selected?"#ffd166":"#b7d1b0"
         )).setDepth(83).setScrollFactor(0);
         this.battleUi.push(t);
       });
