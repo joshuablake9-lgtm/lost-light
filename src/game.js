@@ -953,6 +953,8 @@
       this.save.className = npc.className;
       this.save.mentor = npc.name;
       this.save.startedAt = new Date().toISOString();
+      this.save.level = 1;
+      this.save.xp = 0;
       this.save.healingDraughts = 3;
       this.save.smokeBombs = 1;
       saveGame(this.save);
@@ -1002,14 +1004,51 @@
     }
 
     getClassStats() {
+      const level=Math.max(1,this.save.level || 1);
+      const rank=level-1;
       const stats = {
-        Fighter: { hp: 18, damage: 5, armor: 2, skill: "Second Wind" },
-        Ranger: { hp: 15, damage: 5, armor: 1, skill: "Hunter's Mark" },
-        Rogue: { hp: 14, damage: 6, armor: 1, skill: "Sneak Attack" },
-        Cleric: { hp: 16, damage: 4, armor: 1, skill: "Healing Light", mp: 6, abilityCost: 3 },
-        Wizard: { hp: 12, damage: 7, armor: 0, skill: "Magic Missile", mp: 9, abilityCost: 3 }
+        Fighter: { hp: 18+rank*4, damage: 5+Math.floor(rank/2), armor: 2+Math.floor(rank/3), skill: "Second Wind" },
+        Ranger: { hp: 15+rank*3, damage: 5+Math.floor(rank/2), armor: 1+Math.floor(rank/4), skill: "Hunter's Mark" },
+        Rogue: { hp: 14+rank*3, damage: 6+Math.floor(rank/2), armor: 1+Math.floor(rank/4), skill: "Sneak Attack" },
+        Cleric: { hp: 16+rank*3, damage: 4+Math.floor(rank/2), armor: 1+Math.floor(rank/3), skill: "Healing Light", mp: 6+rank*2, abilityCost: 3 },
+        Wizard: { hp: 12+rank*2, damage: 7+Math.floor(rank/2), armor: 0+Math.floor(rank/5), skill: "Magic Missile", mp: 9+rank*3, abilityCost: 3 }
       };
       return stats[this.save.className] || stats.Fighter;
+    }
+
+    xpToNext(level=this.save.level || 1) {
+      return level*25;
+    }
+
+    gainExperience(enemy) {
+      if (enemy.xpAwarded) return;
+      enemy.xpAwarded=true;
+      const reward=enemy.id==="varkul" ? 45 : (enemy.type==="orc" || enemy.type==="hobgoblin" ? 18 : 10);
+      let level=Math.max(1,this.save.level || 1);
+      let xp=Math.max(0,this.save.xp || 0)+reward;
+      let leveled=false;
+      const oldMax=this.playerMaxHp;
+      while(level<10 && xp>=this.xpToNext(level)) {
+        xp-=this.xpToNext(level);
+        level++;
+        leveled=true;
+      }
+      this.save.level=level;
+      this.save.xp=level>=10 ? 0 : xp;
+      if (leveled) {
+        const stats=this.getClassStats();
+        this.playerMaxHp=stats.hp;
+        this.playerHp=stats.hp;
+        this.playerMaxMp=stats.mp || 0;
+        this.playerMp=this.playerMaxMp;
+        this.save.playerHp=this.playerHp;
+        this.save.playerMp=this.playerMp;
+        const notice=this.text(80,48,"LEVEL UP!  LV "+level,8,"#ffd166",0.5).setDepth(95);
+        this.tweens.add({targets:notice,y:notice.y-24,alpha:0,duration:1200,delay:450,onComplete:()=>notice.destroy()});
+      } else if (this.playerMaxHp !== oldMax) {
+        this.playerMaxHp=this.getClassStats().hp;
+      }
+      saveGame(this.save);
     }
 
     prepareCombat(area, heroX, heroY, objective) {
@@ -1056,9 +1095,10 @@
       const stats = this.getClassStats();
       this.hudText = this.text(
         4, 127,
-        "HP " + this.playerHp + "/" + this.playerMaxHp +
-          (this.playerMaxMp ? " · MP " + this.playerMp + "/" + this.playerMaxMp : "") +
-          " · POT " + (this.save.healingDraughts || 0) + " · FOES " + this.enemies.length,
+        "LV"+(this.save.level||1)+" XP"+(this.save.xp||0)+"/"+this.xpToNext()+
+          " HP"+this.playerHp+"/"+this.playerMaxHp+
+          (this.playerMaxMp ? " MP"+this.playerMp+"/"+this.playerMaxMp : "")+
+          " F"+this.enemies.length,
         5, "#ffefc1"
       ).setDepth(70);
     }
@@ -1088,6 +1128,7 @@
         onComplete: () => {
           this.busy = false;
           if (enemy.hp <= 0) {
+            this.gainExperience(enemy);
             this.blocked.delete(enemy.x + "," + enemy.y);
             enemy.sprite.destroy();
             this.enemies = this.enemies.filter(e => e !== enemy);
@@ -1271,7 +1312,7 @@
       const foeName=this.add.text(31,34,enemy.name.toUpperCase(),style(15,"#ffd166"))
         .setDepth(83).setScrollFactor(0);
       const foeHp=this.add.text(31,61,"HP",style(12)).setDepth(83).setScrollFactor(0);
-      const heroName=this.add.text(261,216,(this.save.className||"HERO").toUpperCase(),style(15,"#ffd166"))
+      const heroName=this.add.text(261,216,(this.save.className||"HERO").toUpperCase()+"  LV"+(this.save.level||1),style(15,"#ffd166"))
         .setDepth(83).setScrollFactor(0);
       const heroHp=this.add.text(261,239,"HP",style(11)).setDepth(83).setScrollFactor(0);
       const heroNumbers=this.add.text(447,239,this.playerHp+"/"+this.playerMaxHp,style(10))
@@ -1447,6 +1488,7 @@
         onComplete:()=>{
           this.busy=false;
           if(enemy.hp<=0) {
+            this.gainExperience(enemy);
             this.blocked.delete(enemy.x+","+enemy.y);
             enemy.sprite.destroy();
             this.enemies=this.enemies.filter(e=>e!==enemy);
