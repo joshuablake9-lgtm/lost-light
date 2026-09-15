@@ -1021,6 +1021,7 @@
       this.facing = { x: 0, y: -1 };
       this.blocked = new Set();
       this.enemies = [];
+      this.guarding = false;
       const stats = this.getClassStats();
       this.playerMaxHp = stats.hp;
       this.playerHp = Math.min(this.save.playerHp || stats.hp, stats.hp);
@@ -1074,6 +1075,7 @@
       let damage = stats.damage;
       if (this.save.className === "Rogue" && enemy.hp === enemy.maxHp) damage += 2;
       if (this.save.className === "Ranger" && this.enemies.length === 1) damage += 1;
+      if (this.save.className === "Ranger" && enemy.marked) damage += 2;
       enemy.hp -= damage;
       this.cameras.main.shake(80, 0.006);
       this.tweens.add({
@@ -1126,7 +1128,11 @@
       }
       if (totalDamage) {
         const armor = this.getClassStats().armor;
-        const dealt = Math.max(1, totalDamage - armor);
+        let dealt = Math.max(1, totalDamage - armor);
+        if (this.guarding) {
+          dealt = Math.max(1, Math.floor(dealt / 3));
+          this.guarding = false;
+        }
         this.playerHp -= dealt;
         this.save.playerHp = this.playerHp;
         saveGame(this.save);
@@ -1164,6 +1170,8 @@
     openBattleMenu(enemy) {
       this.ensureInventory();
       this.battleTarget = enemy;
+      this.abilityUses = typeof enemy.abilityUses === "number" ? enemy.abilityUses : 2;
+      enemy.abilityUses = this.abilityUses;
       this.battleMenu = "main";
       this.battleIndex = 0;
       this.mode = "battle";
@@ -1269,22 +1277,22 @@
 
       const options=this.battleMenu==="items"
         ? ["DRAUGHT ×"+this.save.healingDraughts,"SMOKE ×"+this.save.smokeBombs,"BACK"]
-        : ["ATTACK","ITEM","RUN"];
+        : ["ATTACK",this.getAbilityName()+" ×"+this.abilityUses,"ITEM","RUN"];
       const positions=this.battleMenu==="items"
         ? [[292,329],[292,361],[292,393]]
-        : [[292,337],[390,337],[292,381]];
+        : [[288,337],[374,337],[288,381],[374,381]];
       options.forEach((option,index)=>{
         const selected=index===this.battleIndex;
         const [x,y]=positions[index];
         const t=this.add.text(x,y,(selected?"▶ ":"  ")+option,style(
-          this.battleMenu==="items"?13:15,selected?"#ffd166":"#b7d1b0"
+          this.battleMenu==="items"?13:12,selected?"#ffd166":"#b7d1b0"
         )).setDepth(83).setScrollFactor(0);
         this.battleUi.push(t);
       });
     }
 
     moveBattleCursor(direction) {
-      const count=3;
+      const count=this.battleMenu==="items" ? 3 : 4;
       this.battleIndex=(this.battleIndex+direction+count)%count;
       this.renderBattleMenu();
     }
@@ -1293,7 +1301,7 @@
       if (this.battleMenu === "items") {
         if (this.battleIndex === 0) return this.useHealingDraught();
         if (this.battleIndex === 1) return this.useSmokeBomb();
-        this.battleMenu="main"; this.battleIndex=1; this.renderBattleMenu();
+        this.battleMenu="main"; this.battleIndex=2; this.renderBattleMenu();
         return;
       }
       if (this.battleIndex === 0) {
@@ -1301,8 +1309,90 @@
         this.clearBattleMenu(true);
         this.attackEnemy(target);
       } else if (this.battleIndex === 1) {
+        this.useClassAbility();
+      } else if (this.battleIndex === 2) {
         this.battleMenu="items"; this.battleIndex=0; this.renderBattleMenu();
       } else this.attemptRun(false);
+    }
+
+    getAbilityName() {
+      return {
+        Fighter:"GUARD", Ranger:"MARK", Rogue:"QUICKSTEP",
+        Cleric:"HEALING", Wizard:"EMBER BOLT"
+      }[this.save.className] || "GUARD";
+    }
+
+    spendAbilityUse() {
+      this.abilityUses--;
+      this.battleTarget.abilityUses=this.abilityUses;
+    }
+
+    useClassAbility() {
+      if (this.abilityUses <= 0) {
+        this.renderBattleMenu("YOU HAVE NO ABILITY USES LEFT.");
+        return;
+      }
+      const className=this.save.className || "Fighter";
+      const target=this.battleTarget;
+
+      if (className === "Fighter") {
+        this.spendAbilityUse();
+        this.guarding=true;
+        this.clearBattleMenu(true);
+        this.enemyTurn();
+        return;
+      }
+
+      if (className === "Cleric") {
+        if (this.playerHp >= this.playerMaxHp) {
+          this.renderBattleMenu("HEALING LIGHT FINDS NO WOUNDS.");
+          return;
+        }
+        this.spendAbilityUse();
+        this.playerHp=Math.min(this.playerMaxHp,this.playerHp+7);
+        this.save.playerHp=this.playerHp;
+        saveGame(this.save);
+        this.clearBattleMenu(true);
+        this.updateHud();
+        this.enemyTurn();
+        return;
+      }
+
+      this.spendAbilityUse();
+      if (className === "Ranger") {
+        target.marked=true;
+        this.abilityStrike(target,4,true);
+      } else if (className === "Rogue") {
+        this.abilityStrike(target,6,false);
+      } else {
+        this.abilityStrike(target,10,true);
+      }
+    }
+
+    abilityStrike(enemy, damage, enemyActs) {
+      this.clearBattleMenu(true);
+      this.busy=true;
+      enemy.hp-=damage;
+      this.cameras.main.flash(90,255,190,70);
+      this.cameras.main.shake(100,0.009);
+      this.tweens.add({
+        targets:enemy.sprite,alpha:0.15,duration:65,yoyo:true,
+        onComplete:()=>{
+          this.busy=false;
+          if(enemy.hp<=0) {
+            this.blocked.delete(enemy.x+","+enemy.y);
+            enemy.sprite.destroy();
+            this.enemies=this.enemies.filter(e=>e!==enemy);
+            this.updateHud();
+            if(!this.enemies.length) {
+              this.onCombatCleared();
+              return;
+            }
+          }
+          if(enemyActs) this.enemyTurn();
+          else this.updateHud();
+        }
+      });
     }
 
     useHealingDraught() {
@@ -1552,7 +1642,7 @@
         else if (this.pressed(this.keys.z, this.keys.enter, this.keys.space)) this.chooseBattleAction();
         else if (this.pressed(this.keys.x, this.keys.esc)) {
           if (this.battleMenu === "items") {
-            this.battleMenu="main"; this.battleIndex=1; this.renderBattleMenu();
+            this.battleMenu="main"; this.battleIndex=2; this.renderBattleMenu();
           } else this.attemptRun(false);
         }
         return;
