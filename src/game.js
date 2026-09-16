@@ -1499,31 +1499,104 @@
     }
 
     attackEnemy(enemy) {
-      if (this.busy) return;
-      this.busy = true;
-      const stats = this.getClassStats();
-      let damage = stats.damage;
-      if (this.save.className === "Rogue" && enemy.hp === enemy.maxHp) damage += 2;
-      if (this.save.className === "Ranger" && this.enemies.length === 1) damage += 1;
-      if (this.save.className === "Ranger" && enemy.marked) damage += 2;
-      enemy.hp -= damage;
-      this.cameras.main.shake(80, 0.006);
+      const inBattle=this.mode==="battle";
+      if(this.busy && !inBattle) return;
+      this.busy=true;
+      if(inBattle) this.battleResolving=true;
+      const stats=this.getClassStats();
+      let damage=stats.damage;
+      if(this.save.className==="Rogue" && enemy.hp===enemy.maxHp) damage+=2;
+      if(this.save.className==="Ranger" && this.enemies.length===1) damage+=1;
+      if(this.save.className==="Ranger" && enemy.marked) damage+=2;
+      enemy.hp-=damage;
+
+      if(inBattle) {
+        this.cameras.main.shake(80,0.006);
+        this.tweens.add({
+          targets:this.battleHeroSprite,x:145,duration:80,yoyo:true
+        });
+        this.tweens.add({
+          targets:this.battleEnemySprite,alpha:0.2,duration:70,yoyo:true,
+          onComplete:()=>this.finishBattleStrike(enemy,true,"You deal "+damage+" damage.")
+        });
+        return;
+      }
+
+      this.cameras.main.shake(80,0.006);
       this.tweens.add({
-        targets: enemy.sprite, alpha: 0.25, duration: 55, yoyo: true,
-        onComplete: () => {
-          this.busy = false;
-          if (enemy.hp <= 0) {
-            this.gainExperience(enemy);
-            this.blocked.delete(enemy.x + "," + enemy.y);
-            enemy.sprite.destroy();
-            this.enemies = this.enemies.filter(e => e !== enemy);
-            this.updateHud();
-            if (!this.enemies.length) {
+        targets:enemy.sprite,alpha:0.25,duration:55,yoyo:true,
+        onComplete:()=>{
+          this.busy=false;
+          if(enemy.hp<=0) {
+            this.removeDefeatedEnemy(enemy);
+            if(!this.enemies.length) {
               this.onCombatCleared();
               return;
             }
           }
           this.enemyTurn();
+        }
+      });
+    }
+
+    removeDefeatedEnemy(enemy) {
+      this.gainExperience(enemy);
+      this.blocked.delete(enemy.x+","+enemy.y);
+      enemy.sprite.destroy();
+      this.enemies=this.enemies.filter(e=>e!==enemy);
+      this.updateHud();
+    }
+
+    finishBattleStrike(enemy,enemyActs,message) {
+      if(enemy.hp<=0) {
+        this.removeDefeatedEnemy(enemy);
+        this.clearBattleMenu(true);
+        this.busy=false;
+        if(!this.enemies.length) this.onCombatCleared();
+        return;
+      }
+      if(enemyActs) this.battleEnemyTurn(message);
+      else {
+        this.busy=false;
+        this.battleMenu="main";
+        this.battleIndex=0;
+        this.renderBattleMenu(message);
+      }
+    }
+
+    battleEnemyTurn(playerMessage="") {
+      this.battleResolving=true;
+      const enemy=this.battleTarget;
+      if(!enemy || enemy.hp<=0) return;
+      let dealt=Math.max(1,enemy.damage-this.getClassStats().armor);
+      if(this.guarding) {
+        dealt=Math.max(1,Math.floor(dealt/3));
+        this.guarding=false;
+      }
+      this.playerHp-=dealt;
+      this.save.playerHp=this.playerHp;
+      saveGame(this.save);
+      this.cameras.main.flash(75,120,20,20);
+      this.tweens.add({targets:this.battleEnemySprite,x:326,duration:90,yoyo:true});
+      this.tweens.add({
+        targets:this.battleHeroSprite,alpha:0.25,duration:85,yoyo:true,
+        onComplete:()=>{
+          if(this.playerHp<=0) {
+            this.playerHp=0;
+            this.clearBattleMenu(true);
+            this.openDialogue([
+              "Your strength fails and the world goes dark.",
+              "Mara's voice calls you back from the edge.",
+              "You return to the beginning of the battle, restored."
+            ],()=>this.restartCombatArea());
+            return;
+          }
+          this.busy=false;
+          this.battleResolving=false;
+          this.battleMenu="main";
+          this.battleIndex=0;
+          this.updateHud();
+          this.renderBattleMenu((playerMessage?playerMessage+"  ":"")+enemy.name+" deals "+dealt+" damage.");
         }
       });
     }
@@ -1604,6 +1677,7 @@
     openBattleMenu(enemy) {
       this.ensureInventory();
       this.battleTarget = enemy;
+      this.battleResolving = false;
       this.abilityUses = typeof enemy.abilityUses === "number" ? enemy.abilityUses : 2;
       enemy.abilityUses = this.abilityUses;
       this.battleMenu = "main";
@@ -1692,6 +1766,8 @@
         .setDepth(82).setScrollFactor(0).setScale(4.8).setFlipX(true);
       const heroSprite=this.add.sprite(112,236,this.getHeroTexture("up"))
         .setDepth(82).setScrollFactor(0).setScale(5.2);
+      this.battleEnemySprite=enemySprite;
+      this.battleHeroSprite=heroSprite;
       this.battleUi.push(enemySprite,heroSprite);
 
       const style=(size,color="#fff7d6")=>({
@@ -1743,6 +1819,7 @@
     }
 
     chooseBattleAction() {
+      if(this.battleResolving) return;
       if (this.battleMenu === "items") {
         if (this.battleIndex === 0) return this.useHealingDraught();
         if (this.battleIndex === 1) return this.useSmokeBomb();
@@ -1751,7 +1828,6 @@
       }
       if (this.battleIndex === 0) {
         const target=this.battleTarget;
-        this.clearBattleMenu(true);
         this.attackEnemy(target);
       } else if (this.battleIndex === 1) {
         this.useClassAbility();
@@ -1807,9 +1883,8 @@
         this.playerHp=Math.min(this.playerMaxHp,this.playerHp+Math.ceil(this.playerMaxHp/2));
         this.save.playerHp=this.playerHp;
         saveGame(this.save);
-        this.clearBattleMenu(true);
         this.updateHud();
-        this.enemyTurn();
+        this.battleEnemyTurn("Second Wind restores your health.");
         return;
       }
 
@@ -1822,9 +1897,8 @@
         this.playerHp=Math.min(this.playerMaxHp,this.playerHp+7+(stats.healing||0));
         this.save.playerHp=this.playerHp;
         saveGame(this.save);
-        this.clearBattleMenu(true);
         this.updateHud();
-        this.enemyTurn();
+        this.battleEnemyTurn("Healing Light restores your health.");
         return;
       }
 
@@ -1840,16 +1914,18 @@
     }
 
     magicMissile(enemy) {
-      this.clearBattleMenu(true);
       this.busy=true;
+      this.battleResolving=true;
+      const source=this.battleHeroSprite || this.hero;
+      const target=this.battleEnemySprite || enemy.sprite;
       for(let bolt=0;bolt<3;bolt++) {
-        const orb=this.add.circle(this.hero.x+bolt*8-8,this.hero.y-18,6,0xbda7ff)
-          .setDepth(40);
+        const orb=this.add.circle(source.x+bolt*8-8,source.y-18,6,0xbda7ff)
+          .setDepth(90).setScrollFactor(0);
         orb.setStrokeStyle(2,0xffefc1);
         this.tweens.add({
           targets:orb,
-          x:enemy.sprite.x+(bolt-1)*7,
-          y:enemy.sprite.y-10+(bolt%2)*8,
+          x:target.x+(bolt-1)*7,
+          y:target.y-10+(bolt%2)*8,
           duration:180,
           delay:bolt*95,
           ease:"Sine.easeIn",
@@ -1860,27 +1936,27 @@
         });
       }
       this.time.delayedCall(390,()=>{
-        this.busy=false;
         this.abilityStrike(enemy,12+(this.getClassStats().magic||0),true);
       });
     }
 
-    abilityStrike(enemy, damage, enemyActs) {
-      this.clearBattleMenu(true);
+    abilityStrike(enemy,damage,enemyActs) {
       this.busy=true;
+      if(this.mode==="battle") this.battleResolving=true;
       enemy.hp-=damage;
       this.cameras.main.flash(90,255,190,70);
       this.cameras.main.shake(100,0.009);
+      const target=this.mode==="battle" ? this.battleEnemySprite : enemy.sprite;
       this.tweens.add({
-        targets:enemy.sprite,alpha:0.15,duration:65,yoyo:true,
+        targets:target,alpha:0.15,duration:75,yoyo:true,
         onComplete:()=>{
+          if(this.mode==="battle") {
+            this.finishBattleStrike(enemy,enemyActs,this.getAbilityName()+" deals "+damage+" damage.");
+            return;
+          }
           this.busy=false;
           if(enemy.hp<=0) {
-            this.gainExperience(enemy);
-            this.blocked.delete(enemy.x+","+enemy.y);
-            enemy.sprite.destroy();
-            this.enemies=this.enemies.filter(e=>e!==enemy);
-            this.updateHud();
+            this.removeDefeatedEnemy(enemy);
             if(!this.enemies.length) {
               this.onCombatCleared();
               return;
@@ -1905,9 +1981,8 @@
       this.playerHp=Math.min(this.playerMaxHp,this.playerHp+8+(this.getClassStats().healing||0));
       this.save.playerHp=this.playerHp;
       saveGame(this.save);
-      this.clearBattleMenu(true);
       this.updateHud();
-      this.enemyTurn();
+      this.battleEnemyTurn("You drink a healing draught.");
     }
 
     useSmokeBomb() {
@@ -2368,6 +2443,7 @@
       }
 
       if (this.mode === "battle") {
+        if(this.battleResolving) return;
         if (this.pressed(this.keys.up, this.keys.w)) this.moveBattleCursor(-1);
         else if (this.pressed(this.keys.down, this.keys.s)) this.moveBattleCursor(1);
         else if (this.pressed(this.keys.z, this.keys.enter, this.keys.space)) this.chooseBattleAction();
