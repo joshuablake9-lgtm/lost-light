@@ -58,6 +58,24 @@
     }
   ];
 
+
+  const ITEMS = {
+    watch_blade: { name:"Watchman's Blade", slot:"weapon", damage:1, description:"+1 damage. A serviceable sword recovered from the gatehouse." },
+    quilted_jack: { name:"Quilted Jack", slot:"armor", hp:2, description:"+2 maximum HP. Patched but sturdy barracks armor." },
+    saint_token: { name:"Silver Saint Token", slot:"trinket", hp:1, description:"+1 maximum HP. A small emblem from the ruined chapel." },
+    marsh_boots: { name:"Marshwalker Boots", slot:"armor", hp:1, description:"+1 maximum HP. Keeps steady footing in flooded stonework." },
+    jailer_ring: { name:"Jailer's Iron Ring", slot:"trinket", armor:1, description:"+1 armor. Heavy iron engraved with Greywatch's crest." },
+    tempered_hatchet: { name:"Tempered Hatchet", slot:"weapon", damage:1, description:"+1 damage. The finest surviving weapon in the armory." },
+    hearth_charm: { name:"Hearthkeeper Charm", slot:"trinket", healing:1, description:"+1 healing from draughts and healing abilities." },
+    scribe_lens: { name:"Runed Scribe Lens", slot:"trinket", mp:1, description:"+1 maximum MP. The glass still holds a trace of old magic." },
+    captain_mantle: { name:"Captain's Mantle", slot:"armor", hp:2, description:"+2 maximum HP. A weathered cloak from the war room." },
+    greywatch_buckler: { name:"Greywatch Buckler", slot:"armor", className:"Fighter", armor:1, hp:1, unique:true, description:"Fighter only. +1 armor and +1 maximum HP." },
+    hawk_quiver: { name:"Hawkfeather Quiver", slot:"trinket", className:"Ranger", damage:1, unique:true, description:"Ranger only. +1 damage with every attack." },
+    nightglass_dirk: { name:"Nightglass Dirk", slot:"weapon", className:"Rogue", damage:1, unique:true, description:"Rogue only. +1 damage, including Sneak Attack scaling." },
+    dawn_reliquary: { name:"Reliquary of Dawn", slot:"trinket", className:"Cleric", mp:2, healing:1, unique:true, description:"Cleric only. +2 maximum MP and +1 healing." },
+    violet_spellshard: { name:"Violet Spellshard", slot:"trinket", className:"Wizard", mp:2, magic:1, unique:true, description:"Wizard only. +2 maximum MP and +1 Magic Missile damage." }
+  };
+
   function loadSave() {
     try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; }
     catch (_) { return {}; }
@@ -80,6 +98,10 @@
       this.blocked = new Set();
       this.npcs = [];
       this.enemies = [];
+      this.loot = [];
+      this.inventoryUi = [];
+      this.inventoryIndex = 0;
+      this.inventoryScroll = 0;
       this.area = "";
       this.objective = "";
       this.playerHp = 0;
@@ -98,7 +120,7 @@
         up: "UP", down: "DOWN", left: "LEFT", right: "RIGHT",
         w: "W", a: "A", s: "S", d: "D",
         z: "Z", enter: "ENTER", space: "SPACE",
-        x: "X", esc: "ESC", r: "R"
+        x: "X", esc: "ESC", r: "R", i: "I"
       });
       this.showTitle();
     }
@@ -254,6 +276,16 @@
       makeMonster("orc", "orc");
       makeMonster("hobgoblin", "hobgoblin");
 
+      const chest = this.make.graphics({ add: false });
+      chest.fillStyle(0x182847).fillRect(1,6,22,17);
+      chest.fillStyle(0x704536).fillRect(3,8,18,13);
+      chest.fillStyle(0xb97845).fillRect(4,5,16,7);
+      chest.fillStyle(0xe6b85c).fillRect(10,9,5,8);
+      chest.fillStyle(0xffd166).fillRect(11,10,3,4);
+      chest.lineStyle(2,0x2b2730).strokeRect(3,7,18,15);
+      chest.generateTexture("treasure-chest",24,24);
+      chest.destroy();
+
       const flame = this.make.graphics({ add: false });
       flame.fillStyle(COLORS.red).fillRect(4, 7, 8, 8);
       flame.fillStyle(COLORS.gold).fillRect(6, 3, 5, 10);
@@ -271,6 +303,8 @@
       this.busy = false;
       this.npcs = [];
       this.enemies = [];
+      this.loot = [];
+      this.inventoryUi = [];
       this.hudText = null;
     }
 
@@ -882,6 +916,11 @@
     talk() {
       const targetX = this.heroTile.x + this.facing.x;
       const targetY = this.heroTile.y + this.facing.y;
+      const chest=this.loot.find(item=>item.x===targetX&&item.y===targetY);
+      if(chest) {
+        this.collectLoot(chest);
+        return;
+      }
       const npc = this.npcs.find(n => n.x === targetX && n.y === targetY);
       if (!npc) {
         const message = this.enemies && this.enemies.length
@@ -959,6 +998,9 @@
       this.save.levelingVersion = 2;
       this.save.healingDraughts = 3;
       this.save.smokeBombs = 1;
+      this.save.inventory = [];
+      this.save.equipment = { weapon:null, armor:null, trinket:null };
+      this.save.collectedLoot = [];
       saveGame(this.save);
       this.clearChoice();
       this.openDialogue([
@@ -1014,6 +1056,141 @@
       });
     }
 
+    getEquipmentBonuses() {
+      this.ensureInventory();
+      const total={hp:0,damage:0,armor:0,mp:0,healing:0,magic:0};
+      Object.values(this.save.equipment).forEach(id=>{
+        const item=ITEMS[id];
+        if(!item) return;
+        for(const stat of Object.keys(total)) total[stat]+=item[stat] || 0;
+      });
+      return total;
+    }
+
+    spawnLoot(itemId,x,y) {
+      this.ensureInventory();
+      if(this.save.collectedLoot.includes(itemId)) return;
+      const item=ITEMS[itemId];
+      if(!item) return;
+      const sprite=this.add.sprite(x*TILE+24,y*TILE+20,"treasure-chest").setDepth(13).setScale(2);
+      this.loot.push({id:"loot-"+itemId,itemId,item,x,y,sprite});
+      this.blocked.add(x+","+y);
+    }
+
+    collectLoot(chest) {
+      this.ensureInventory();
+      if(!this.save.inventory.includes(chest.itemId)) this.save.inventory.push(chest.itemId);
+      if(!this.save.collectedLoot.includes(chest.itemId)) this.save.collectedLoot.push(chest.itemId);
+      this.blocked.delete(chest.x+","+chest.y);
+      chest.sprite.destroy();
+      this.loot=this.loot.filter(x=>x!==chest);
+      saveGame(this.save);
+      const restriction=chest.item.className ? "  ["+chest.item.className.toUpperCase()+" ONLY]" : "";
+      this.openDialogue([
+        "You found: "+chest.item.name+"."+restriction,
+        chest.item.description,
+        "Press I to open your inventory and equip it."
+      ]);
+    }
+
+    openInventoryMenu() {
+      this.ensureInventory();
+      this.mode="inventory";
+      this.busy=true;
+      this.inventoryIndex=Math.min(this.inventoryIndex,Math.max(0,this.save.inventory.length-1));
+      this.renderInventoryMenu();
+    }
+
+    closeInventoryMenu() {
+      this.inventoryUi.forEach(x=>x&&x.destroy());
+      this.inventoryUi=[];
+      this.mode="world";
+      this.busy=false;
+      this.updateHud();
+    }
+
+    renderInventoryMenu(message="") {
+      this.inventoryUi.forEach(x=>x&&x.destroy());
+      this.inventoryUi=[];
+      const panel=this.add.graphics().setDepth(100).setScrollFactor(0);
+      panel.fillStyle(0x101827,0.98).fillRect(8,10,464,412);
+      panel.lineStyle(5,COLORS.cream).strokeRect(8,10,464,412);
+      panel.lineStyle(2,COLORS.gold).strokeRect(15,17,450,398);
+      panel.fillStyle(0x26334d).fillRect(20,52,440,44);
+      panel.fillStyle(0x182847).fillRect(20,326,440,78);
+      this.inventoryUi.push(panel);
+
+      const style=(size,color="#fff7d6")=>({fontFamily:"Silkscreen, monospace",fontSize:size+"px",color});
+      const title=this.add.text(25,24,"INVENTORY",style(22,"#ffd166")).setDepth(101).setScrollFactor(0);
+      const eq=this.save.equipment;
+      const short=id=>id&&ITEMS[id]?ITEMS[id].name:"—";
+      const equipped=this.add.text(29,60,
+        "WEAPON: "+short(eq.weapon)+"\nARMOR:  "+short(eq.armor)+"\nTRINKET:"+short(eq.trinket),
+        style(11,"#b7d1b0")).setDepth(101).setScrollFactor(0);
+      this.inventoryUi.push(title,equipped);
+
+      const inventory=this.save.inventory;
+      if(!inventory.length) {
+        const empty=this.add.text(30,125,"Your pack contains no equipment.",style(15,"#89a39a")).setDepth(101).setScrollFactor(0);
+        this.inventoryUi.push(empty);
+      } else {
+        const visible=7;
+        if(this.inventoryIndex<this.inventoryScroll) this.inventoryScroll=this.inventoryIndex;
+        if(this.inventoryIndex>=this.inventoryScroll+visible) this.inventoryScroll=this.inventoryIndex-visible+1;
+        inventory.slice(this.inventoryScroll,this.inventoryScroll+visible).forEach((id,row)=>{
+          const item=ITEMS[id],index=this.inventoryScroll+row;
+          const selected=index===this.inventoryIndex;
+          const worn=this.save.equipment[item.slot]===id;
+          const restricted=item.className&&item.className!==this.save.className;
+          const label=(selected?"▶ ":"  ")+(worn?"[E] ":"")+item.name+(item.unique?" ★":"");
+          const line=this.add.text(30,110+row*29,label,style(14,
+            restricted?"#6f7280":(selected?"#ffd166":"#fff7d6")
+          )).setDepth(101).setScrollFactor(0);
+          this.inventoryUi.push(line);
+        });
+        const item=ITEMS[inventory[this.inventoryIndex]];
+        const stats=[
+          item.damage?"+ "+item.damage+" DAMAGE":"",
+          item.armor?"+ "+item.armor+" ARMOR":"",
+          item.hp?"+ "+item.hp+" HP":"",
+          item.mp?"+ "+item.mp+" MP":"",
+          item.healing?"+ "+item.healing+" HEALING":"",
+          item.magic?"+ "+item.magic+" SPELL DAMAGE":""
+        ].filter(Boolean).join("  ·  ");
+        const detail=this.add.text(29,338,
+          (message||item.description)+"\n"+stats+"\nZ: EQUIP   X/I: CLOSE",
+          style(11,message?"#ffb09f":"#b7d1b0")).setDepth(101).setScrollFactor(0);
+        detail.setWordWrapWidth(420);
+        this.inventoryUi.push(detail);
+      }
+    }
+
+    moveInventoryCursor(direction) {
+      if(!this.save.inventory.length) return;
+      this.inventoryIndex=(this.inventoryIndex+direction+this.save.inventory.length)%this.save.inventory.length;
+      this.renderInventoryMenu();
+    }
+
+    toggleEquipment() {
+      if(!this.save.inventory.length) return;
+      const id=this.save.inventory[this.inventoryIndex],item=ITEMS[id];
+      if(item.className && item.className!==this.save.className) {
+        this.renderInventoryMenu("Only a "+item.className+" can equip "+item.name+".");
+        return;
+      }
+      const oldStats=this.getClassStats();
+      this.save.equipment[item.slot]=this.save.equipment[item.slot]===id?null:id;
+      const newStats=this.getClassStats();
+      this.playerMaxHp=newStats.hp;
+      this.playerHp=Math.max(1,Math.min(newStats.hp,this.playerHp+(newStats.hp-oldStats.hp)));
+      this.playerMaxMp=newStats.mp||0;
+      this.playerMp=Math.max(0,Math.min(this.playerMaxMp,(this.playerMp||0)+(this.playerMaxMp-(oldStats.mp||0))));
+      this.save.playerHp=this.playerHp;
+      this.save.playerMp=this.playerMp;
+      saveGame(this.save);
+      this.renderInventoryMenu();
+    }
+
     getClassStats() {
       const level=Math.max(1,this.save.level || 1);
       const rank=level-1;
@@ -1024,7 +1201,15 @@
         Cleric: { hp: 16+rank*3, damage: 4+Math.floor(rank/2), armor: 1+Math.floor(rank/3), skill: "Healing Light", mp: 6+rank*2, abilityCost: 3 },
         Wizard: { hp: 12+rank*2, damage: 7+Math.floor(rank/2), armor: 0+Math.floor(rank/5), skill: "Magic Missile", mp: 9+rank*3, abilityCost: 3 }
       };
-      return stats[this.save.className] || stats.Fighter;
+      const result={...(stats[this.save.className] || stats.Fighter)};
+      const gear=this.getEquipmentBonuses();
+      result.hp+=gear.hp;
+      result.damage+=gear.damage;
+      result.armor+=gear.armor;
+      if(result.mp) result.mp+=gear.mp;
+      result.healing=gear.healing;
+      result.magic=gear.magic;
+      return result;
     }
 
     xpToNext(level=this.save.level || 1) {
@@ -1246,6 +1431,9 @@
     ensureInventory() {
       if (typeof this.save.healingDraughts !== "number") this.save.healingDraughts = 3;
       if (typeof this.save.smokeBombs !== "number") this.save.smokeBombs = 1;
+      if (!Array.isArray(this.save.inventory)) this.save.inventory=[];
+      if (!Array.isArray(this.save.collectedLoot)) this.save.collectedLoot=[];
+      if (!this.save.equipment) this.save.equipment={weapon:null,armor:null,trinket:null};
     }
 
     openBattleMenu(enemy) {
@@ -1466,7 +1654,7 @@
           return;
         }
         this.spendAbilityUse();
-        this.playerHp=Math.min(this.playerMaxHp,this.playerHp+7);
+        this.playerHp=Math.min(this.playerMaxHp,this.playerHp+7+(stats.healing||0));
         this.save.playerHp=this.playerHp;
         saveGame(this.save);
         this.clearBattleMenu(true);
@@ -1508,7 +1696,7 @@
       }
       this.time.delayedCall(390,()=>{
         this.busy=false;
-        this.abilityStrike(enemy,12,true);
+        this.abilityStrike(enemy,12+(this.getClassStats().magic||0),true);
       });
     }
 
@@ -1549,7 +1737,7 @@
         return;
       }
       this.save.healingDraughts--;
-      this.playerHp=Math.min(this.playerMaxHp,this.playerHp+8);
+      this.playerHp=Math.min(this.playerMaxHp,this.playerHp+8+(this.getClassStats().healing||0));
       this.save.playerHp=this.playerHp;
       saveGame(this.save);
       this.clearBattleMenu(true);
@@ -1816,6 +2004,20 @@
         g.lineStyle(5,0xe6b85c).strokeRect(6*T+14,9*T+6,8*T-28,2*T-12);
       }
 
+      // Treasure is persistent and distributed across Greywatch.
+      const genericLoot=["watch_blade","quilted_jack","saint_token","marsh_boots","jailer_ring","tempered_hatchet","hearth_charm","scribe_lens","captain_mantle",null];
+      const genericItem=genericLoot[index];
+      if(genericItem) this.spawnLoot(genericItem,10,11);
+      const classTreasures={
+        Fighter:{room:1,id:"greywatch_buckler"},
+        Ranger:{room:3,id:"hawk_quiver"},
+        Rogue:{room:4,id:"nightglass_dirk"},
+        Cleric:{room:6,id:"dawn_reliquary"},
+        Wizard:{room:7,id:"violet_spellshard"}
+      };
+      const classTreasure=classTreasures[this.save.className];
+      if(classTreasure && classTreasure.room===index) this.spawnLoot(classTreasure.id,10,2);
+
       const cleared=this.save.clearedRooms.includes(index);
       if(!cleared) {
         const encounters=[
@@ -1936,6 +2138,14 @@
         return;
       }
 
+      if (this.mode === "inventory") {
+        if (this.pressed(this.keys.up, this.keys.w)) this.moveInventoryCursor(-1);
+        else if (this.pressed(this.keys.down, this.keys.s)) this.moveInventoryCursor(1);
+        else if (this.pressed(this.keys.z, this.keys.enter, this.keys.space)) this.toggleEquipment();
+        else if (this.pressed(this.keys.x, this.keys.esc, this.keys.i)) this.closeInventoryMenu();
+        return;
+      }
+
       if (this.mode === "choice") {
         if (this.pressed(this.keys.z, this.keys.enter, this.keys.space)) this.acceptClass();
         else if (this.pressed(this.keys.x, this.keys.esc)) this.clearChoice();
@@ -1953,6 +2163,10 @@
       }
 
       if (this.mode !== "world") return;
+      if (this.pressed(this.keys.i)) {
+        this.openInventoryMenu();
+        return;
+      }
       if (this.pressed(this.keys.z, this.keys.enter, this.keys.space)) {
         if (this.enemies && this.enemies.length && this.combatTalk()) return;
         return this.talk();
