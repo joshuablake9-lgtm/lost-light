@@ -582,13 +582,12 @@
       const renderScale = 3;
       return this.add.text(x * renderScale, y * renderScale, value, {
 
-        fontFamily: 'Silkscreen, monospace',
-        fontSize: (size * renderScale) + "px",
+        fontFamily: 'Verdana, Arial, sans-serif',
+        fontSize: Math.max(size * renderScale, 16) + "px",
         fontStyle: "bold",
         color,
-        resolution: 32,
-        lineSpacing: 1,
-        shadow: { offsetX: 0, offsetY: renderScale, color: "#0b1728", blur: 0, stroke: false, fill: true }
+        resolution: 48,
+        lineSpacing: 3
       }).setOrigin(origin).setDepth(20).setScrollFactor(0);
     }
 
@@ -1705,7 +1704,7 @@
       this.inventoryUi.push(panel);
 
       const style=(size,color="#fff7d6")=>({
-        fontFamily:"Silkscreen, monospace",fontSize:size+"px",fontStyle:"bold",color,resolution: 24
+        fontFamily:"Verdana, Arial, sans-serif",fontSize:size+"px",fontStyle:"bold",color,resolution: 48
       });
       const title=this.add.text(25,21,"INVENTORY",style(22,"#ffd166")).setDepth(101).setScrollFactor(0);
       this.inventoryUi.push(title);
@@ -1889,7 +1888,7 @@
       panel.fillStyle(0x182847).fillRect(20,326,440,80);
       this.shopUi.push(panel);
       const style=(size,color="#fff7d6")=>({
-        fontFamily:"Silkscreen, monospace",fontSize:size+"px",fontStyle:"bold",color,resolution: 24
+        fontFamily:"Verdana, Arial, sans-serif",fontSize:size+"px",fontStyle:"bold",color,resolution: 48
       });
       this.shopUi.push(
         this.add.text(25,21,"SELDA'S MARKET",style(21,"#ffd166")).setDepth(106).setScrollFactor(0),
@@ -2229,8 +2228,8 @@
 
     showLootToast(message) {
       const toast=this.add.text(WIDTH/2,104,message,{
-        fontFamily:"Silkscreen, monospace",fontSize:"14px",fontStyle:"bold",
-        color:"#ffd166",backgroundColor:"#182847",padding:{x:9,y:5},resolution: 24
+        fontFamily:"Verdana, Arial, sans-serif",fontSize:"14px",fontStyle:"bold",
+        color:"#ffd166",backgroundColor:"#182847",padding:{x:9,y:5},resolution: 48
       }).setOrigin(0.5).setDepth(98).setScrollFactor(0);
       this.tweens.add({targets:toast,y:88,alpha:0,duration:1100,delay:650,onComplete:()=>toast.destroy()});
     }
@@ -2516,7 +2515,7 @@
       this.addBattleEquipmentVisuals();
 
       const style=(size,color="#172b45")=>({
-        fontFamily:"Silkscreen, monospace",fontSize:size+"px",fontStyle:"bold",color,resolution: 32
+        fontFamily:"Verdana, Arial, sans-serif",fontSize:size+"px",fontStyle:"bold",color,resolution: 48
       });
       const foeName=this.add.text(31,34,enemy.name.toUpperCase(),style(15,"#d84d59"))
         .setDepth(83).setScrollFactor(0);
@@ -2551,7 +2550,7 @@
         const selected=index===this.battleIndex;
         const [x,y]=positions[index];
         const t=this.add.text(x,y,(selected?"▶ ":"  ")+option,style(
-          this.battleMenu==="items"?11:11,selected?"#d84d59":"#315b8a"
+          this.battleMenu==="items"?13:13,selected?"#d84d59":"#315b8a"
         )).setDepth(83).setScrollFactor(0);
         this.battleUi.push(t);
       });
@@ -3156,7 +3155,7 @@
 
       this.createCombatHero();
       const roomLabel=this.add.text(18,18,(index+1)+"/10  "+room.name,{
-        fontFamily:"Silkscreen, monospace",fontSize:"14px",fontStyle:"bold",color:"#ffefc1",resolution: 24,
+        fontFamily:"Verdana, Arial, sans-serif",fontSize:"16px",fontStyle:"bold",color:"#ffefc1",resolution: 48,
         backgroundColor:"#182847",padding:{x:8,y:5}
       }).setDepth(72).setScrollFactor(0);
       if(!cleared) this.openDialogue([room.intro,index<9?"Defeat the guards, then take the northern passage.":"Defeat Varkul and end the Ashfang raid."]);
@@ -3308,7 +3307,7 @@
       });
       this.createCombatHero();
       this.add.text(18,18,(index+1)+"/20  "+room.region+"  ·  "+room.name,{
-        fontFamily:"Silkscreen, monospace",fontSize:"13px",fontStyle:"bold",color:"#ffefc1",resolution:24,
+        fontFamily:"Verdana, Arial, sans-serif",fontSize:"15px",fontStyle:"bold",color:"#ffefc1",resolution:48,
         backgroundColor:"#182847",padding:{x:8,y:5}
       }).setDepth(72).setScrollFactor(0);
       if(!cleared) this.openDialogue([room.intro,index<19?"Defeat the guards and continue north.":"Defeat Malrec and break the conquest ritual."]);
