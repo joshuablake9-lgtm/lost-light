@@ -2329,8 +2329,9 @@
       }
       this.battleUi.push(panel);
 
-      const enemySprite=this.add.sprite(359,130,enemy.type+"-side")
-        .setDepth(82).setScrollFactor(0).setScale(4.8).setFlipX(true);
+      const battleEnemyTexture=enemy.type==="goblin" ? "goblin-down" : enemy.type+"-side";
+      const enemySprite=this.add.sprite(359,130,battleEnemyTexture)
+        .setDepth(82).setScrollFactor(0).setScale(4.8).setFlipX(enemy.type!=="goblin");
       const heroSprite=this.add.sprite(112,236,this.getHeroTexture("up"))
         .setDepth(82).setScrollFactor(0).setScale(5.2);
       this.battleEnemySprite=enemySprite;
