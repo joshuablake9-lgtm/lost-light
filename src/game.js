@@ -8,7 +8,14 @@
   const TILE = 48;
   const MAP_WIDTH = 20 * TILE;
   const MAP_HEIGHT = 15 * TILE;
-  const SAVE_KEY = "lost-light-save-v1";
+  const LEGACY_SAVE_KEY = "lost-light-save-v1";
+  const SAVE_PREFIX = "lost-light-save-v1-slot-";
+  const ACTIVE_SLOT_KEY = "lost-light-active-slot";
+  const SAVE_SLOT_COUNT = 3;
+
+  const clampSlot = value => Math.max(1, Math.min(SAVE_SLOT_COUNT, Number(value) || 1));
+  let activeSaveSlot = clampSlot(localStorage.getItem(ACTIVE_SLOT_KEY));
+  const saveKey = slot => SAVE_PREFIX + clampSlot(slot);
 
   const COLORS = {
     ink: 0x182847,
@@ -76,13 +83,24 @@
     violet_spellshard: { name:"Violet Spellshard", slot:"trinket", className:"Wizard", mp:2, magic:1, unique:true, description:"Wizard only. +2 maximum MP and +1 Magic Missile damage." }
   };
 
-  function loadSave() {
-    try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; }
+  function migrateLegacySave() {
+    try {
+      const legacy = localStorage.getItem(LEGACY_SAVE_KEY);
+      if (legacy && !localStorage.getItem(saveKey(1))) {
+        localStorage.setItem(saveKey(1), legacy);
+        localStorage.removeItem(LEGACY_SAVE_KEY);
+      }
+    } catch (_) {}
+  }
+
+  function loadSave(slot = activeSaveSlot) {
+    migrateLegacySave();
+    try { return JSON.parse(localStorage.getItem(saveKey(slot))) || {}; }
     catch (_) { return {}; }
   }
 
   function saveGame(data) {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    localStorage.setItem(saveKey(activeSaveSlot), JSON.stringify(data));
   }
 
   class LostLightScene extends Phaser.Scene {
@@ -438,6 +456,20 @@
       }).setOrigin(origin).setDepth(20).setScrollFactor(0);
     }
 
+    selectSaveSlot(direction) {
+      activeSaveSlot = ((activeSaveSlot - 1 + direction + SAVE_SLOT_COUNT) % SAVE_SLOT_COUNT) + 1;
+      localStorage.setItem(ACTIVE_SLOT_KEY, String(activeSaveSlot));
+      this.save = loadSave(activeSaveSlot);
+      this.showTitle();
+    }
+
+    slotSummary(slot) {
+      const data = loadSave(slot);
+      if (!data.className) return "EMPTY";
+      const stage = data.gameComplete ? "COMPLETE" : "LV" + (data.level || 1);
+      return data.className.toUpperCase() + " " + stage;
+    }
+
     showTitle() {
       this.clearScene();
       this.scale.resize(TITLE_WIDTH, TITLE_HEIGHT);
@@ -500,10 +532,15 @@
       this.text(26, 62, "LIGHT", 27, "#ffefc1")
         .setShadow(3, 3, "#8b3a3a", 0, false, true);
       this.text(28, 98, "A TALE OF THE LANTERN COAST", 8, "#b7d1b0");
-      this.text(160, 221, this.save.className ? "CONTINUE" : "NEW JOURNEY", 13, "#fff7d6", 0.5);
-      const prompt = this.text(160, 246, "PRESS Z OR ENTER", 9, "#e6b85c", 0.5);
+      this.text(160, 201, this.save.className ? "CONTINUE JOURNEY" : "NEW JOURNEY", 10, "#fff7d6", 0.5);
+      for (let slot = 1; slot <= SAVE_SLOT_COUNT; slot++) {
+        const selected = slot === activeSaveSlot;
+        const label = (selected ? "▶ " : "  ") + "SLOT " + slot + " · " + this.slotSummary(slot);
+        this.text(160, 218 + (slot - 1) * 17, label, 7, selected ? "#ffd166" : "#b7d1b0", 0.5);
+      }
+      const prompt = this.text(160, 270, "← → SELECT   Z: PLAY", 7, "#e6b85c", 0.5);
       if (this.save.className) {
-        this.text(160, 266, "R: ERASE SAVE", 7, "#89a39a", 0.5);
+        this.text(160, 282, "R: ERASE SELECTED SLOT", 5, "#89a39a", 0.5);
       }
       this.tweens.add({
         targets: prompt,
@@ -2592,9 +2629,17 @@
 
     update() {
       if (this.mode === "title") {
+        if (this.pressed(this.keys.left, this.keys.a, this.keys.up, this.keys.w)) {
+          this.selectSaveSlot(-1);
+          return;
+        }
+        if (this.pressed(this.keys.right, this.keys.d, this.keys.down, this.keys.s)) {
+          this.selectSaveSlot(1);
+          return;
+        }
         if (this.pressed(this.keys.z, this.keys.enter, this.keys.space)) this.startGame();
         if (this.pressed(this.keys.r) && this.save.className) {
-          localStorage.removeItem(SAVE_KEY);
+          localStorage.removeItem(saveKey(activeSaveSlot));
           this.save = {};
           this.showTitle();
         }
