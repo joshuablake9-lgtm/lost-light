@@ -570,6 +570,7 @@
       this.blocked = new Set();
 
       const g = this.add.graphics();
+      const T = TILE;
       g.fillStyle(COLORS.deep).fillRect(0, 0, MAP_WIDTH, MAP_HEIGHT);
       // Hand-detailed plank floor with seams, highlights and deterministic knots.
       for (let y = 2; y < 15; y++) {
