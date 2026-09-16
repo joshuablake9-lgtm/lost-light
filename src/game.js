@@ -560,7 +560,7 @@
         fontSize: (size * renderScale) + "px",
         fontStyle: "bold",
         color,
-        resolution: 20,
+        resolution: 24,
         lineSpacing: 1
       }).setOrigin(origin).setDepth(20).setScrollFactor(0);
     }
@@ -1580,7 +1580,7 @@
       this.inventoryUi.push(panel);
 
       const style=(size,color="#fff7d6")=>({
-        fontFamily:"Silkscreen, monospace",fontSize:size+"px",fontStyle:"bold",color,resolution: 20
+        fontFamily:"Silkscreen, monospace",fontSize:size+"px",fontStyle:"bold",color,resolution: 24
       });
       const title=this.add.text(25,21,"INVENTORY",style(22,"#ffd166")).setDepth(101).setScrollFactor(0);
       this.inventoryUi.push(title);
@@ -1762,7 +1762,7 @@
       panel.fillStyle(0x182847).fillRect(20,326,440,80);
       this.shopUi.push(panel);
       const style=(size,color="#fff7d6")=>({
-        fontFamily:"Silkscreen, monospace",fontSize:size+"px",fontStyle:"bold",color,resolution: 20
+        fontFamily:"Silkscreen, monospace",fontSize:size+"px",fontStyle:"bold",color,resolution: 24
       });
       this.shopUi.push(
         this.add.text(25,21,"SELDA'S MARKET",style(21,"#ffd166")).setDepth(106).setScrollFactor(0),
@@ -2054,7 +2054,7 @@
     showLootToast(message) {
       const toast=this.add.text(WIDTH/2,104,message,{
         fontFamily:"Silkscreen, monospace",fontSize:"14px",fontStyle:"bold",
-        color:"#ffd166",backgroundColor:"#182847",padding:{x:9,y:5},resolution: 20
+        color:"#ffd166",backgroundColor:"#182847",padding:{x:9,y:5},resolution: 24
       }).setOrigin(0.5).setDepth(98).setScrollFactor(0);
       this.tweens.add({targets:toast,y:88,alpha:0,duration:1100,delay:650,onComplete:()=>toast.destroy()});
     }
@@ -2282,7 +2282,7 @@
       this.addBattleEquipmentVisuals();
 
       const style=(size,color="#fff7d6")=>({
-        fontFamily:"Silkscreen, monospace",fontSize:size+"px",fontStyle:"bold",color,resolution: 20
+        fontFamily:"Silkscreen, monospace",fontSize:size+"px",fontStyle:"bold",color,resolution: 24
       });
       const foeName=this.add.text(31,34,enemy.name.toUpperCase(),style(15,"#ffd166"))
         .setDepth(83).setScrollFactor(0);
@@ -2913,7 +2913,7 @@
 
       this.createCombatHero();
       const roomLabel=this.add.text(18,18,(index+1)+"/10  "+room.name,{
-        fontFamily:"Silkscreen, monospace",fontSize:"14px",fontStyle:"bold",color:"#ffefc1",resolution: 20,
+        fontFamily:"Silkscreen, monospace",fontSize:"14px",fontStyle:"bold",color:"#ffefc1",resolution: 24,
         backgroundColor:"#182847",padding:{x:8,y:5}
       }).setDepth(72).setScrollFactor(0);
       if(!cleared) this.openDialogue([room.intro,index<9?"Defeat the guards, then take the northern passage.":"Defeat Varkul and end the Ashfang raid."]);
@@ -3084,7 +3084,7 @@
 
   document.fonts.ready.then(() => new Phaser.Game({
     type: Phaser.AUTO,
-    resolution: Math.min(Math.max((window.devicePixelRatio || 1) * 2, 4), 8),
+    resolution: Math.min(Math.max((window.devicePixelRatio || 1) * 3, 6), 8),
     antialias: false,
     antialiasGL: false,
     powerPreference: "high-performance",
