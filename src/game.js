@@ -18,18 +18,18 @@
   const saveKey = slot => SAVE_PREFIX + clampSlot(slot);
 
   const COLORS = {
-    ink: 0x182847,
-    deep: 0x26334d,
-    cream: 0xffefc1,
-    gold: 0xe6b85c,
-    timber: 0x8b4f3d,
-    floorA: 0xc99157,
-    floorB: 0xb97845,
-    green: 0x5f8b62,
-    blue: 0x477b9d,
-    red: 0xa84b4b,
-    purple: 0x76558f,
-    white: 0xfff7d6
+    ink: 0x172b45,
+    deep: 0x29496b,
+    cream: 0xfff8dc,
+    gold: 0xf7c84b,
+    timber: 0x9b5b3f,
+    floorA: 0xd89a55,
+    floorB: 0xc37a43,
+    green: 0x55a65c,
+    blue: 0x3d91c5,
+    red: 0xd84d59,
+    purple: 0x7864b8,
+    white: 0xfffdf2
   };
 
   const MENTORS = [
@@ -580,8 +580,9 @@
         fontSize: (size * renderScale) + "px",
         fontStyle: "bold",
         color,
-        resolution: 24,
-        lineSpacing: 1
+        resolution: 32,
+        lineSpacing: 1,
+        shadow: { offsetX: 0, offsetY: renderScale, color: "#0b1728", blur: 0, stroke: false, fill: true }
       }).setOrigin(origin).setDepth(20).setScrollFactor(0);
     }
 
@@ -1307,12 +1308,16 @@
       if (this.dialogueHint) this.dialogueHint.destroy();
 
       this.dialoguePanel = this.add.graphics().setDepth(50).setScrollFactor(0).setScale(3);
-      this.dialoguePanel.fillStyle(COLORS.cream).fillRect(3, 86, 154, 55);
-      this.dialoguePanel.fillStyle(COLORS.ink).fillRect(6, 89, 148, 49);
-      this.dialoguePanel.lineStyle(1, COLORS.gold).strokeRect(5, 88, 150, 51);
-      this.dialogueText = this.text(10, 94, this.wrap(this.dialogue[this.dialogueIndex], 24), 7, "#fff7d6")
-        .setDepth(51);
-      this.dialogueHint = this.text(149, 130, "▼", 7, "#ffd166", 1).setDepth(51);
+      // Bright layered GBA dialogue frame inspired by classic handheld RPGs.
+      this.dialoguePanel.fillStyle(0x152a46,0.42).fillRect(4,87,154,54);
+      this.dialoguePanel.fillStyle(0x3868a0).fillRect(3,84,154,55);
+      this.dialoguePanel.fillStyle(0x9fd4e7).fillRect(5,86,150,51);
+      this.dialoguePanel.fillStyle(0xfffdf2).fillRect(7,88,146,47);
+      this.dialoguePanel.lineStyle(1,0x315b8a).strokeRect(6,87,148,49);
+      this.dialoguePanel.fillStyle(0xdceef1).fillRect(9,90,142,2);
+      this.dialogueText = this.text(11,94,this.wrap(this.dialogue[this.dialogueIndex],30),6,"#172b45")
+        .setDepth(51).setShadow(0,0,"#000000",0,false,false);
+      this.dialogueHint = this.text(148,128,"▼",7,"#d84d59",1).setDepth(51);
     }
 
     closeDialogue() {
@@ -1446,20 +1451,21 @@
       };
       const info=classInfo[npc.className] || classInfo.Fighter;
       this.choicePanel = this.add.graphics().setDepth(55).setScrollFactor(0).setScale(3);
-      this.choicePanel.fillStyle(0x101827,0.88).fillRect(8,25,144,112);
-      this.choicePanel.fillStyle(COLORS.cream).fillRect(10,27,140,108);
-      this.choicePanel.fillStyle(COLORS.ink).fillRect(13,30,134,102);
-      this.choicePanel.lineStyle(2,npc.color,1).strokeRect(15,32,130,98);
+      this.choicePanel.fillStyle(0x152a46,0.5).fillRect(9,26,144,112);
+      this.choicePanel.fillStyle(0x3868a0).fillRect(8,24,144,112);
+      this.choicePanel.fillStyle(0x9fd4e7).fillRect(10,26,140,108);
+      this.choicePanel.fillStyle(0xfffdf2).fillRect(13,29,134,102);
+      this.choicePanel.lineStyle(2,npc.color,1).strokeRect(15,31,130,98);
 
       const choiceText=(x,y,value,size,color,origin=0)=>{
         return this.text(x,y,value,size,color,origin).setDepth(60).setData("choice",true);
       };
-      choiceText(80,36,npc.className.toUpperCase(),9,"#ffd166",0.5);
-      choiceText(80,50,info.ability,6,"#b7d1b0",0.5);
-      choiceText(18,63,this.wrap(info.description,38),5,"#fff7d6");
-      choiceText(18,91,info.stats,5,"#ffd166");
-      choiceText(18,102,info.gear,5,"#b7d1b0");
-      choiceText(80,120,"Z: ACCEPT   X: DECLINE",5,"#ffefc1",0.5);
+      choiceText(80,36,npc.className.toUpperCase(),9,"#d84d59",0.5);
+      choiceText(80,50,info.ability,6,"#315b8a",0.5);
+      choiceText(18,63,this.wrap(info.description,38),5,"#172b45");
+      choiceText(18,91,info.stats,5,"#9a5a18");
+      choiceText(18,102,info.gear,5,"#315b8a");
+      choiceText(80,120,"Z: ACCEPT   X: DECLINE",5,"#172b45",0.5);
     }
 
     clearChoice() {
@@ -2096,13 +2102,13 @@
       if (!this.enemies || !this.enemies.length) return;
       const stats = this.getClassStats();
       this.hudText = this.text(
-        4, 127,
-        "LV"+(this.save.level||1)+" XP"+(this.save.xp||0)+"/"+this.xpToNext()+
-          " HP"+this.playerHp+"/"+this.playerMaxHp+
-          (this.playerMaxMp ? " MP"+this.playerMp+"/"+this.playerMaxMp : "")+
-          " F"+this.enemies.length,
-        5, "#ffefc1"
-      ).setDepth(70);
+        5, 5,
+        "LV "+(this.save.level||1)+"  HP "+this.playerHp+"/"+this.playerMaxHp+
+          (this.playerMaxMp ? "  MP "+this.playerMp+"/"+this.playerMaxMp : "")+
+          "  FOES "+this.enemies.length,
+        5, "#172b45"
+      ).setDepth(70).setBackgroundColor("#fffdf2").setPadding(7,5,7,5)
+        .setStroke("#ffffff",1).setShadow(2,2,"#172b45",0,true,true);
     }
 
     spawnEnemy(id, type, x, y, hp, damage, name) {
@@ -2400,11 +2406,12 @@
       }
 
       const panel = this.add.graphics().setDepth(80).setScrollFactor(0);
-      const palette = this.area === "castle"
-        ? { sky: 0x303844, far: 0x46515b, ground: 0x626765, light: 0x89908a }
+      const darkArea=this.area==="castle"||this.area==="dungeon"||this.area==="chapter2";
+      const palette = darkArea
+        ? { sky: 0x59627c, far: 0x39445f, ground: 0x6f766c, light: 0xaeb7a4 }
         : (this.area === "road"
-          ? { sky: 0x8eb59a, far: 0x52765a, ground: 0x6f8b58, light: 0xa9bd79 }
-          : { sky: 0xd69b68, far: 0x7b704f, ground: 0x84925b, light: 0xd5bd72 });
+          ? { sky: 0x91d9e8, far: 0x4e9a62, ground: 0x79b85a, light: 0xb9db72 }
+          : { sky: 0x8fd9ed, far: 0x5ca96a, ground: 0x8cc45c, light: 0xd0e87c });
 
       // Full-screen handheld battle arena with layered depth.
       panel.fillStyle(palette.sky).fillRect(0, 0, WIDTH, 306);
@@ -2428,27 +2435,33 @@
       panel.fillStyle(palette.ground).fillEllipse(112,270,169,29);
 
       // Bottom dialogue and command frames.
-      panel.fillStyle(0x101827).fillRect(0,306,WIDTH,126);
-      panel.lineStyle(5,COLORS.cream).strokeRect(8,313,258,111);
-      panel.lineStyle(5,COLORS.cream).strokeRect(273,313,199,111);
-      panel.lineStyle(2,COLORS.gold).strokeRect(14,319,246,99);
-      panel.lineStyle(2,COLORS.gold).strokeRect(279,319,187,99);
+      panel.fillStyle(0x315b8a).fillRect(0,306,WIDTH,126);
+      panel.fillStyle(0x9fd4e7).fillRect(5,311,266,116);
+      panel.fillStyle(0xfffdf2).fillRect(10,316,256,106);
+      panel.fillStyle(0x9fd4e7).fillRect(268,311,207,116);
+      panel.fillStyle(0xfffdf2).fillRect(273,316,197,106);
+      panel.lineStyle(3,0x3868a0).strokeRect(8,314,260,110);
+      panel.lineStyle(3,0x3868a0).strokeRect(271,314,201,110);
 
       // Status cards and health bars.
-      panel.fillStyle(0xffefc1).fillRect(16,22,223,69);
-      panel.fillStyle(0x182847).fillRect(21,27,213,59);
-      panel.lineStyle(3,COLORS.gold).strokeRect(19,25,217,63);
-      panel.fillStyle(0xffefc1).fillRect(245,202,219,76);
-      panel.fillStyle(0x182847).fillRect(250,207,209,66);
-      panel.lineStyle(3,COLORS.gold).strokeRect(248,205,213,70);
+      panel.fillStyle(0x315b8a,0.45).fillRect(19,25,223,69);
+      panel.fillStyle(0x9fd4e7).fillRect(16,22,223,69);
+      panel.fillStyle(0xfffdf2).fillRect(21,27,213,59);
+      panel.lineStyle(3,0x3868a0).strokeRect(19,25,217,63);
+      panel.fillStyle(0x315b8a,0.45).fillRect(248,205,219,76);
+      panel.fillStyle(0x9fd4e7).fillRect(245,202,219,76);
+      panel.fillStyle(0xfffdf2).fillRect(250,207,209,66);
+      panel.lineStyle(3,0x3868a0).strokeRect(248,205,213,70);
 
       const enemyRatio=Math.max(0,enemy.hp)/enemy.maxHp;
       const heroRatio=Math.max(0,this.playerHp)/this.playerMaxHp;
       const hpColor=ratio=>ratio>0.5?0x74a85e:(ratio>0.25?0xe6b85c:0xc94f4f);
-      panel.fillStyle(0x3b4050).fillRect(86,65,137,10);
-      panel.fillStyle(hpColor(enemyRatio)).fillRect(88,67,133*enemyRatio,6);
-      panel.fillStyle(0x3b4050).fillRect(309,245,137,10);
-      panel.fillStyle(hpColor(heroRatio)).fillRect(311,247,133*heroRatio,6);
+      panel.fillStyle(0x29384d).fillRect(86,65,137,11);
+      panel.fillStyle(0xffffff).fillRect(88,67,133,7);
+      panel.fillStyle(hpColor(enemyRatio)).fillRect(89,68,131*enemyRatio,5);
+      panel.fillStyle(0x29384d).fillRect(309,245,137,11);
+      panel.fillStyle(0xffffff).fillRect(311,247,133,7);
+      panel.fillStyle(hpColor(heroRatio)).fillRect(312,248,131*heroRatio,5);
       if (this.playerMaxMp) {
         const mpRatio=Math.max(0,this.playerMp)/this.playerMaxMp;
         panel.fillStyle(0x3b4050).fillRect(309,264,137,8);
@@ -2466,13 +2479,13 @@
       this.battleUi.push(enemySprite,heroSprite);
       this.addBattleEquipmentVisuals();
 
-      const style=(size,color="#fff7d6")=>({
-        fontFamily:"Silkscreen, monospace",fontSize:size+"px",fontStyle:"bold",color,resolution: 24
+      const style=(size,color="#172b45")=>({
+        fontFamily:"Silkscreen, monospace",fontSize:size+"px",fontStyle:"bold",color,resolution: 32
       });
-      const foeName=this.add.text(31,34,enemy.name.toUpperCase(),style(15,"#ffd166"))
+      const foeName=this.add.text(31,34,enemy.name.toUpperCase(),style(15,"#d84d59"))
         .setDepth(83).setScrollFactor(0);
       const foeHp=this.add.text(31,61,"HP",style(12)).setDepth(83).setScrollFactor(0);
-      const heroName=this.add.text(261,216,(this.save.className||"HERO").toUpperCase()+"  LV"+(this.save.level||1),style(15,"#ffd166"))
+      const heroName=this.add.text(261,216,(this.save.className||"HERO").toUpperCase()+"  LV"+(this.save.level||1),style(15,"#315b8a"))
         .setDepth(83).setScrollFactor(0);
       const heroHp=this.add.text(261,239,"HP",style(11)).setDepth(83).setScrollFactor(0);
       const heroNumbers=this.add.text(447,239,this.playerHp+"/"+this.playerMaxHp,style(10))
@@ -2488,7 +2501,7 @@
       const promptText=message || (this.battleMenu==="items"
         ? "Choose an item."
         : "What will "+(this.save.className||"the hero")+" do?");
-      const prompt=this.add.text(25,330,this.wrap(promptText,24),style(15,message?"#ffb09f":"#fff7d6"))
+      const prompt=this.add.text(25,330,this.wrap(promptText,24),style(15,message?"#c63f4c":"#172b45"))
         .setDepth(83).setScrollFactor(0);
       this.battleUi.push(prompt);
 
@@ -2502,7 +2515,7 @@
         const selected=index===this.battleIndex;
         const [x,y]=positions[index];
         const t=this.add.text(x,y,(selected?"▶ ":"  ")+option,style(
-          this.battleMenu==="items"?11:11,selected?"#ffd166":"#b7d1b0"
+          this.battleMenu==="items"?11:11,selected?"#d84d59":"#315b8a"
         )).setDepth(83).setScrollFactor(0);
         this.battleUi.push(t);
       });
@@ -3473,7 +3486,7 @@
 
   document.fonts.ready.then(() => new Phaser.Game({
     type: Phaser.AUTO,
-    resolution: Math.min(Math.max((window.devicePixelRatio || 1) * 3, 6), 8),
+    resolution: Math.min(Math.max((window.devicePixelRatio || 1) * 4, 8), 12),
     antialias: false,
     antialiasGL: false,
     powerPreference: "high-performance",
