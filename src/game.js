@@ -608,6 +608,24 @@
         g.fillStyle(0xe5d290, 0.12).fillTriangle(px + 5, 2 * TILE + 34, px + TILE - 5, 2 * TILE + 34, px + TILE + 28, 5 * TILE);
       });
 
+      // Carved rafters, limewash panels, iron nails and pools of window light.
+      for(let x=2;x<19;x+=2) {
+        g.fillStyle(0x3b2b2d,0.55).fillRect(x*T+18,2*T+5,7,12*T-12);
+        g.fillStyle(0xd0a064).fillRect(x*T+20,2*T+8,2,12*T-18);
+        for(let y=3;y<14;y+=3) g.fillStyle(0x242631).fillCircle(x*T+21,y*T+13,3);
+      }
+      for(let x=2;x<18;x+=3) {
+        g.fillStyle(0xe7c58a,0.08).fillTriangle(x*T,3*T,(x+2)*T,3*T,(x+1)*T,10*T);
+      }
+      [[6,5],[12,4],[16,9],[4,13]].forEach(([x,y])=>{
+        g.fillStyle(0x6c4434).fillEllipse(x*T+19,y*T+31,13,7);
+        g.fillStyle(0xc58a52).fillRect(x*T+15,y*T+28,9,2);
+      });
+      for(let x=2;x<18;x++) {
+        g.fillStyle(0x2b2730,0.22).fillRect(x*T,14*T+31,T,9);
+        if(x%3===0) g.fillStyle(0xb97845).fillRect(x*T+9,14*T+24,27,3);
+      }
+
       g.fillStyle(COLORS.timber);
       g.fillRect(TILE, 2 * TILE, 18 * TILE, 6);
       g.fillRect(TILE, 15 * TILE - 6, 18 * TILE, 6);
@@ -817,6 +835,32 @@
       g.fillStyle(0xb3784d).fillTriangle(T+12,10*T+16,3*T,9*T+30,4*T+35,10*T+16);
       g.fillStyle(0xd6b16d).fillRect(2*T+8,10*T+18,2*T-16,5);
       g.fillStyle(0x253d4d).fillRect(2*T+17,10*T+24,2*T-34,9);
+
+      // Coastal life: laundry lines, dry-stone borders, flower beds and gull shadows.
+      g.lineStyle(3,0x6f4a36).lineBetween(13*T,5*T+7,18*T,5*T+7);
+      [0,1,2,3].forEach(i=>{
+        const colors=[0xe5d9b6,0x9e5260,0x477b9d,0xd5a85f];
+        g.fillStyle(colors[i]).fillTriangle(13*T+28+i*47,5*T+9,13*T+47+i*47,5*T+9,13*T+38+i*47,5*T+37);
+      });
+      for(let x=5;x<19;x+=2) {
+        g.fillStyle(0x77766c).fillEllipse(x*T+15,10*T-9,17,9);
+        g.fillStyle(0xaaa28d).fillRect(x*T+9,10*T-12,11,3);
+      }
+      [[7,5],[13,5],[18,9],[7,14]].forEach(([x,y])=>{
+        g.fillStyle(0x365c3f).fillRect(x*T+4,y*T+31,T-8,8);
+        for(let i=0;i<4;i++) {
+          g.fillStyle(i%2?0xe7c65e:0xdb91a0).fillCircle(x*T+10+i*9,y*T+30-(i%2)*5,4);
+        }
+      });
+      [[6,4],[12,2],[17,7]].forEach(([x,y])=>{
+        g.fillStyle(0x26334d,0.16).fillEllipse(x*T,y*T,37,9);
+        g.lineStyle(2,0xf1e5bd,0.8).arc(x*T-7,y*T-12,8,0.2,2.9);
+        g.lineStyle(2,0xf1e5bd,0.8).arc(x*T+7,y*T-12,8,0.2,2.9);
+      });
+      for(let y=1;y<14;y+=2) {
+        g.fillStyle(0xdce8d2,0.65).fillRect(4*T-9,y*T+11,13,3);
+        g.fillStyle(0x779f91,0.55).fillRect(4*T-17,y*T+29,17,3);
+      }
 
       // Lost Light sign and lantern.
       g.fillStyle(0x372b2f).fillRect(6*T+10,4*T-17,7,47);
@@ -1938,6 +1982,28 @@
       burningHouse(2,1,5,0x95664c);
       burningHouse(13,1,5,0xa57c55);
       burningHouse(14,10,4,0x8b674e);
+      // Battle damage: rolling smoke, ash, shattered fences, arrows and glowing embers.
+      [[4,2,44],[15,2,52],[16,11,39]].forEach(([x,y,size])=>{
+        g.fillStyle(0x242936,0.32).fillCircle(x*T,y*T,size);
+        g.fillStyle(0x4d4850,0.28).fillCircle(x*T+24,y*T-31,size*0.72);
+        g.fillStyle(0x73706b,0.18).fillCircle(x*T-13,y*T-59,size*0.48);
+      });
+      [[7,5],[12,5],[4,9],[16,8]].forEach(([x,y])=>{
+        g.fillStyle(0x5a382f).fillRect(x*T+5,y*T+25,T-10,7);
+        g.fillStyle(0x8b573b).fillTriangle(x*T+3,y*T+27,x*T+24,y*T+7,x*T+44,y*T+27);
+        g.fillStyle(0xd9553f).fillCircle(x*T+12,y*T+14,4);
+        g.fillStyle(0xffb84d).fillCircle(x*T+29,y*T+10,3);
+      });
+      for(const [x,y] of [[7,7],[11,6],[12,11],[5,12],[16,6]]) {
+        g.lineStyle(3,0x302a2c).lineBetween(x*T+6,y*T+36,x*T+38,y*T+8);
+        g.fillStyle(0xb7bdad).fillTriangle(x*T+34,y*T+8,x*T+43,y*T+3,x*T+39,y*T+13);
+      }
+      g.lineStyle(5,0x704536);
+      g.lineBetween(3*T,7*T,7*T,7*T+19);
+      g.lineBetween(13*T,12*T,18*T,12*T-14);
+      for(let x=3;x<8;x++) g.fillStyle(0x8b6042).fillRect(x*T,7*T-8,5,33);
+      for(let x=13;x<19;x++) g.fillStyle(0x8b6042).fillRect(x*T,12*T-25,5,33);
+
       this.addBoundaries();
       [[5,6],[15,6],[6,10],[13,9]].forEach(([x,y],i)=>this.spawnEnemy("raid-"+i,"goblin",x,y,7,2,"Ashfang Goblin"));
       this.createCombatHero();
@@ -1964,6 +2030,31 @@
         g.fillStyle(0x3f7049).fillCircle(x*T+13,y*T+18,19).fillCircle(x*T+37,y*T+20,20);
         g.fillStyle(0x6f9b5a).fillCircle(x*T+22,y*T+7,13);
       }
+      // Dense coastwood undergrowth, exposed roots, mushrooms and low drifting mist.
+      for(let x=1;x<19;x+=2) {
+        g.fillStyle(0x183a32,0.12).fillCircle(x*T+24,2*T+8,84+(x%3)*18);
+      }
+      [[4,5],[9,3],[14,4],[6,11],[15,11]].forEach(([x,y])=>{
+        g.fillStyle(0x315f43).fillTriangle(x*T,y*T+39,x*T+9,y*T+8,x*T+17,y*T+39);
+        g.fillStyle(0x4d8250).fillTriangle(x*T+15,y*T+39,x*T+27,y*T+3,x*T+37,y*T+39);
+        g.fillStyle(0x76a35e).fillTriangle(x*T+29,y*T+39,x*T+39,y*T+13,x*T+46,y*T+39);
+      });
+      [[6,4],[13,5],[5,10],[15,10]].forEach(([x,y])=>{
+        g.fillStyle(0xe8d9b0).fillRect(x*T+12,y*T+30,3,8).fillRect(x*T+29,y*T+33,3,6);
+        g.fillStyle(0xb64f4f).fillCircle(x*T+13,y*T+29,7).fillCircle(x*T+30,y*T+32,6);
+        g.fillStyle(0xffefc1).fillRect(x*T+10,y*T+26,2,2).fillRect(x*T+28,y*T+29,2,2);
+      });
+      g.fillStyle(0x4b362e).fillRect(2*T+8,5*T+28,5*T-16,18);
+      g.fillStyle(0x79543a).fillRect(2*T+13,5*T+24,5*T-26,8);
+      for(let i=0;i<5;i++) g.fillStyle(0x263c34).fillRect((2+i)*T+20,5*T+37,25,3);
+      for(let x=2;x<18;x+=3) {
+        g.fillStyle(0xc5d4c4,0.08).fillEllipse(x*T+24,9*T+20,3*T,35);
+      }
+      for(const [x,y] of [[4,7],[9,10],[14,6],[17,9]]) {
+        g.lineStyle(4,0x4a342f).arc(x*T+24,y*T+24,24,3.2,6.1);
+        g.lineStyle(2,0x7a6347).arc(x*T+24,y*T+24,15,3.2,6.1);
+      }
+
       // Ashfang trail markers and abandoned supplies.
       g.fillStyle(0x382d2c).fillRect(10*T+8,5*T+22,2*T-16,19);
       g.fillStyle(0xa36c42).fillRect(10*T+14,5*T+15,2*T-28,22);
@@ -2064,6 +2155,35 @@
       if(index===0) { block(9,14,2,1); g.fillStyle(0x343b42).fillRect(9*T,14*T,2*T,T); }
       if(index===9) { block(9,0,2,1); g.fillStyle(0x343b42).fillRect(9*T,0,2*T,T); }
       torch(1,3);torch(18,3);torch(1,11);torch(18,11);
+
+      // Greywatch atmosphere: vaulted door arches, drainage channels, webs, dust and rubble.
+      g.fillStyle(0x151b23,0.28).fillRect(T, T,18*T,18);
+      g.fillStyle(0x88908a,0.25).fillRect(T,T+18,18*T,4);
+      for(const doorY of [0,14]) {
+        g.lineStyle(7,0x747a75).arc(10*T,doorY*T+(doorY===0?T:0),T+14,Math.PI,Math.PI*2);
+        g.lineStyle(3,0x333940).arc(10*T,doorY*T+(doorY===0?T:0),T-1,Math.PI,Math.PI*2);
+      }
+      g.fillStyle(0x232a31,0.65).fillRect(2*T,13*T+35,16*T,7);
+      g.fillStyle(0x65716c,0.45).fillRect(2*T,13*T+36,16*T,2);
+      [[2,2],[17,2],[2,12],[17,12]].forEach(([x,y])=>{
+        g.lineStyle(2,0xb5b6aa,0.48).lineBetween(x*T,y*T,x*T+31,y*T+24);
+        g.lineBetween(x*T,y*T+13,x*T+31,y*T+24);
+        g.lineBetween(x*T+15,y*T,x*T+31,y*T+24);
+        g.lineStyle(1,0xb5b6aa,0.35).arc(x*T,y*T,37,0,1.5);
+      });
+      for(const [x,y] of [[2,7],[5,2],[14,12],[17,8]]) {
+        g.fillStyle(0x31383d).fillCircle(x*T+24,y*T+29,15);
+        g.fillStyle(0x6e716b).fillRect(x*T+12,y*T+25,27,10);
+        g.fillStyle(0x929084).fillRect(x*T+19,y*T+18,15,8);
+      }
+      for(let i=0;i<18;i++) {
+        const x=(i*137+index*41)%(18*T)+T;
+        const y=(i*83+index*29)%(12*T)+T;
+        g.fillStyle(0xd8d3bb,0.16).fillRect(x,y,3,3);
+      }
+      [[3,5],[16,5],[3,10],[16,10]].forEach(([x,y])=>{
+        g.fillStyle(room.accent,0.12).fillCircle(x*T+24,y*T+18,46);
+      });
 
       // Ten room-specific prop and collision layouts.
       if(index===0) {
