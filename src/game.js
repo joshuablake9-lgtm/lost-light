@@ -420,7 +420,22 @@
 
     getHeroTexture(direction="down") {
       const classKey=(this.save.className || "").toLowerCase();
-      return classKey ? "hero-"+classKey+"-"+direction : "hero-"+direction;
+      const baseKey=classKey ? "hero-"+classKey+"-"+direction : "hero-"+direction;
+      if(!classKey || !this.textures || !this.textures.exists(baseKey)) return baseKey;
+      this.ensureInventory();
+      const eq=this.save.equipment || {};
+      if(!eq.weapon&&!eq.armor&&!eq.trinket) return baseKey;
+      const signature=[classKey,eq.weapon||"none",eq.armor||"none",eq.trinket||"none",direction]
+        .join("-").replace(/[^a-z0-9-]/gi,"");
+      const compositeKey="hero-equipped-"+signature;
+      if(this.textures.exists(compositeKey)) return compositeKey;
+
+      const keys=this.getEquipmentTextureKeys(direction);
+      const composite=this.textures.addDynamicTexture(compositeKey,24,32);
+      composite.draw(keys.backKey,0,0);
+      composite.draw(baseKey,0,0);
+      composite.draw(keys.frontKey,0,0);
+      return compositeKey;
     }
 
     clearScene() {
@@ -516,32 +531,17 @@
 
     syncHeroEquipmentVisuals() {
       if(!this.hero||this.mode!=="world") return;
-      const eq=this.save.equipment||{};
       const direction=this.facing.y<0?"up":(this.facing.x!==0?"side":"down");
-      const signature=[eq.weapon||"",eq.armor||"",eq.trinket||"",direction].join("|");
-      const active=this.heroGearVisuals.length&&this.heroGearVisuals.every(x=>x&&x.active);
-      if(this.heroGearOwner!==this.hero||this.heroGearSignature!==signature||!active) {
-        this.heroGearVisuals.forEach(x=>x&&x.destroy());
-        const keys=this.getEquipmentTextureKeys(direction);
-        const back=this.add.sprite(this.hero.x,this.hero.y,keys.backKey).setDepth((this.hero.depth||10)-1);
-        const front=this.add.sprite(this.hero.x,this.hero.y,keys.frontKey).setDepth((this.hero.depth||10)+1);
-        this.heroGearVisuals=[back,front];
-        this.heroGearOwner=this.hero;
-        this.heroGearSignature=signature;
-      }
-      const scaleX=Math.abs(this.hero.scaleX||2)*(this.hero.flipX?-1:1);
-      const scaleY=Math.abs(this.hero.scaleY||2);
-      this.heroGearVisuals.forEach(layer=>{
-        layer.setPosition(this.hero.x,this.hero.y);
-        layer.setScale(scaleX,scaleY);
-      });
+      const textureKey=this.getHeroTexture(direction);
+      if(this.hero.texture.key!==textureKey) this.hero.setTexture(textureKey);
+      this.heroGearVisuals.forEach(x=>x&&x.destroy());
+      this.heroGearVisuals=[];
+      this.heroGearOwner=this.hero;
+      this.heroGearSignature=textureKey;
     }
 
     addBattleEquipmentVisuals() {
-      const keys=this.getEquipmentTextureKeys("up");
-      const back=this.add.sprite(112,236,keys.backKey).setDepth(81).setScrollFactor(0).setScale(5.2);
-      const front=this.add.sprite(112,236,keys.frontKey).setDepth(84).setScrollFactor(0).setScale(5.2);
-      this.battleUi.push(back,front);
+      // Equipment is already composited into the battle hero's single texture.
     }
 
     checkEnemyEngagement() {
