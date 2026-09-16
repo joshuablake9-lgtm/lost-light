@@ -80,7 +80,23 @@
     hawk_quiver: { name:"Hawkfeather Quiver", slot:"cloak", className:"Ranger", damage:1, unique:true, description:"Ranger only. +1 damage with every attack." },
     nightglass_dirk: { name:"Nightglass Dirk", slot:"weapon", className:"Rogue", damage:1, unique:true, description:"Rogue only. +1 damage, including Sneak Attack scaling." },
     dawn_reliquary: { name:"Reliquary of Dawn", slot:"trinket", className:"Cleric", mp:2, healing:1, unique:true, description:"Cleric only. +2 maximum MP and +1 healing." },
-    violet_spellshard: { name:"Violet Spellshard", slot:"trinket", className:"Wizard", mp:2, magic:1, unique:true, description:"Wizard only. +2 maximum MP and +1 Magic Missile damage." }
+    violet_spellshard: { name:"Violet Spellshard", slot:"trinket", className:"Wizard", mp:2, magic:1, unique:true, description:"Wizard only. +2 maximum MP and +1 Magic Missile damage." },
+    blackpine_sabre: { name:"Blackpine Sabre", slot:"weapon", damage:1, description:"+1 damage. A balanced blade carried by the northern wardens." },
+    warded_coat: { name:"Warded Coat", slot:"armor", hp:3, description:"+3 maximum HP. Silver thread turns aside glancing blows." },
+    pilgrim_boots: { name:"Pilgrim Boots", slot:"boots", armor:1, description:"+1 armor. Moonfall leather reinforced with iron." },
+    mirror_shield: { name:"Mirror Shield", slot:"shield", armor:1, mp:1, description:"+1 armor and +1 MP. Its face reflects hostile sorcery." },
+    raven_cloak: { name:"Raven Cloak", slot:"cloak", hp:2, description:"+2 maximum HP. Black feathers soften every fall." },
+    ember_maul: { name:"Ember Maul", slot:"weapon", damage:2, description:"+2 damage. Forged in the furnaces beneath Emberdeep." },
+    rune_mail: { name:"Runed Mail", slot:"armor", armor:1, hp:2, description:"+1 armor and +2 maximum HP." },
+    starstep_boots: { name:"Starstep Boots", slot:"boots", hp:2, mp:1, description:"+2 maximum HP and +1 MP." },
+    spellguard_shield: { name:"Spellguard Shield", slot:"shield", armor:1, mp:2, description:"+1 armor and +2 maximum MP." },
+    sapphire_focus: { name:"Sapphire Focus", slot:"trinket", mp:3, description:"+3 maximum MP. Cold light circles the stone." },
+    shadow_mantle: { name:"Shadow Mantle", slot:"cloak", damage:1, description:"+1 damage. It moves a heartbeat behind its wearer." },
+    lionguard_shield: { name:"Lionguard Shield", slot:"shield", className:"Fighter", armor:2, unique:true, description:"Fighter only. +2 armor." },
+    storm_quiver: { name:"Storm Quiver", slot:"cloak", className:"Ranger", damage:2, unique:true, description:"Ranger only. +2 damage." },
+    duskfang: { name:"Duskfang", slot:"weapon", className:"Rogue", damage:2, unique:true, description:"Rogue only. +2 damage." },
+    solar_icon: { name:"Solar Icon", slot:"trinket", className:"Cleric", mp:3, healing:2, unique:true, description:"Cleric only. +3 MP and +2 healing." },
+    malrec_grimoire: { name:"Malrec\'s Grimoire", slot:"trinket", className:"Wizard", mp:4, magic:2, unique:true, description:"Wizard only. +4 MP and +2 magic damage." }
   };
 
   const VALUABLES = {
@@ -307,6 +323,8 @@
       makePerson("villager-a", 0x7c5b8f, 0x4b302a, "villager");
       makePerson("villager-b", 0x477b9d, 0xb88755, "villager");
       makePerson("villager-c", 0x5f8b62, 0x372d2c, "villager");
+      makePerson("cultist", 0x4b355f, 0x20222d, "wizard");
+      makePerson("malrec", 0x76558f, 0xd8d8e8, "wizard");
       const makeMonster = (key, kind) => {
         ["down", "up", "side"].forEach(direction => {
           const g = this.make.graphics({ add: false });
@@ -667,6 +685,14 @@
       this.cameras.main.setScroll(0, 0);
       this.cameras.main.setBounds(0, 0, WIDTH, HEIGHT);
       if (this.save.className) {
+        if (this.save.chapterTwoComplete) {
+          this.showChapterTwoEnding();
+          return;
+        }
+        if (this.save.chapterStage === "chapter2") {
+          this.buildChapterTwoRoom(this.save.chapterTwoRoom || 0, "south");
+          return;
+        }
         if (this.save.gameComplete) {
           this.showEnding();
           return;
@@ -1441,6 +1467,22 @@
       }
       const nx = this.heroTile.x + dx;
       const ny = this.heroTile.y + dy;
+      if (this.area === "chapter2" && (nx === 9 || nx === 10) && ny === 0) {
+        if (this.enemies.length) this.openDialogue(["The northern passage is blocked while enemies remain."]);
+        else if (this.chapterTwoRoom < 19) this.buildChapterTwoRoom(this.chapterTwoRoom + 1, "south");
+        else if ((this.save.clearedChapterTwoRooms || []).includes(19)) {
+          this.save.chapterTwoComplete=true;
+          this.save.chapterStage="chapter2-complete";
+          saveGame(this.save);
+          this.showChapterTwoEnding();
+        }
+        return;
+      }
+      if (this.area === "chapter2" && (nx === 9 || nx === 10) && ny === 14) {
+        if (this.chapterTwoRoom > 0) this.buildChapterTwoRoom(this.chapterTwoRoom - 1, "north");
+        else this.showEnding();
+        return;
+      }
       if (this.area === "dungeon" && (nx === 9 || nx === 10) && ny === 0) {
         if (this.enemies.length) this.openDialogue(["The northern passage is blocked while enemies remain."]);
         else if (this.dungeonRoom < 9) this.buildDungeonRoom(this.dungeonRoom + 1,"south");
@@ -1926,7 +1968,7 @@
     gainExperience(enemy) {
       if (enemy.xpAwarded) return;
       enemy.xpAwarded=true;
-      const reward=enemy.id==="varkul" ? 45 : (enemy.type==="orc" || enemy.type==="hobgoblin" ? 18 : 10);
+      const reward=enemy.id==="malrec" ? 120 : (enemy.id==="varkul" ? 45 : (enemy.type==="cultist" ? 22 : (enemy.type==="orc" || enemy.type==="hobgoblin" ? 18 : 10)));
       let level=Math.max(1,this.save.level || 1);
       let xp=Math.max(0,this.save.xp || 0)+reward;
       let leveled=false;
@@ -2126,9 +2168,10 @@
       if(!enemy || enemy.hp<=0) return;
       enemy.battleTurns=(enemy.battleTurns||0)+1;
       const ashfangCleave=enemy.id==="varkul"&&enemy.battleTurns%3===0;
-      const rolledDamage=ashfangCleave?Phaser.Math.Between(6,9):this.rollEnemyDamage(enemy);
+      const violetRuin=enemy.id==="malrec"&&enemy.battleTurns%4===0;
+      const rolledDamage=ashfangCleave?Phaser.Math.Between(6,9):(violetRuin?Phaser.Math.Between(8,12):this.rollEnemyDamage(enemy));
       const armor=this.getClassStats().armor;
-      const effectiveArmor=ashfangCleave?Math.floor(armor/2):armor;
+      const effectiveArmor=ashfangCleave?Math.floor(armor/2):(violetRuin?0:armor);
       let dealt=Math.max(1,rolledDamage-effectiveArmor);
       if(this.guarding) {
         dealt=Math.max(1,Math.floor(dealt/3));
@@ -2137,7 +2180,10 @@
       this.playerHp-=dealt;
       this.save.playerHp=this.playerHp;
       saveGame(this.save);
-      if(ashfangCleave) {
+      if(violetRuin) {
+        this.playerMp=Math.max(0,this.playerMp-2); this.save.playerMp=this.playerMp;
+        this.cameras.main.flash(180,90,45,140); this.cameras.main.shake(220,0.017);
+      } else if(ashfangCleave) {
         this.cameras.main.flash(130,175,35,25);
         this.cameras.main.shake(180,0.014);
       } else {
@@ -2145,14 +2191,14 @@
       }
       this.tweens.add({
         targets:this.battleEnemySprite,
-        x:ashfangCleave?302:326,
-        scaleX:ashfangCleave?5.45:4.8,
-        scaleY:ashfangCleave?5.45:4.8,
-        duration:ashfangCleave?140:90,
+        x:(ashfangCleave||violetRuin)?302:326,
+        scaleX:(ashfangCleave||violetRuin)?5.45:4.8,
+        scaleY:(ashfangCleave||violetRuin)?5.45:4.8,
+        duration:(ashfangCleave||violetRuin)?140:90,
         yoyo:true
       });
       this.tweens.add({
-        targets:this.battleHeroSprite,alpha:0.25,duration:ashfangCleave?135:85,yoyo:true,
+        targets:this.battleHeroSprite,alpha:0.25,duration:(ashfangCleave||violetRuin)?135:85,yoyo:true,
         onComplete:()=>{
           if(this.playerHp<=0) {
             this.playerHp=0;
@@ -2171,10 +2217,10 @@
           this.updateHud();
           const action=ashfangCleave
             ? "VARKUL USES ASHFANG CLEAVE! "+dealt+" DAMAGE. HALF ARMOR."
-            : enemy.name+" deals "+dealt+" damage.";
+            : (violetRuin ? "MALREC CASTS VIOLET RUIN! "+dealt+" DAMAGE. 2 MP DRAINED." : enemy.name+" deals "+dealt+" damage.");
           const warning=enemy.id==="varkul"&&enemy.battleTurns%3===2
             ? "  Varkul raises his axe—Ashfang Cleave is next!"
-            : "";
+            : (enemy.id==="malrec"&&enemy.battleTurns%4===3 ? "  The violet crown flares—Violet Ruin is next!" : "");
           this.renderBattleMenu((playerMessage?playerMessage+"  ":"")+action+warning);
         }
       });
@@ -3008,6 +3054,158 @@
       if(!cleared) this.openDialogue([room.intro,index<9?"Defeat the guards, then take the northern passage.":"Defeat Varkul and end the Ashfang raid."]);
     }
 
+
+    beginChapterTwo() {
+      if(!Array.isArray(this.save.clearedChapterTwoRooms)) this.save.clearedChapterTwoRooms=[];
+      this.save.chapterTwoStarted=true;
+      this.save.chapterStage="chapter2";
+      this.save.chapterTwoRoom=Math.max(0,Math.min(19,this.save.chapterTwoRoom || 0));
+      const stats=this.getClassStats();
+      this.save.playerHp=stats.hp;
+      this.save.playerMp=stats.mp || 0;
+      saveGame(this.save);
+      this.buildChapterTwoRoom(this.save.chapterTwoRoom,"south");
+    }
+
+    buildChapterTwoRoom(index, entry="south") {
+      const rooms=[
+        {name:"THE NORTHBOUND GATE",region:"BLACKPINE ROAD",floor:0x405642,accent:0xb7d1b0,intro:"Beyond Dunmere, Malrec's violet trail vanishes into the Blackpine wilds."},
+        {name:"BLACKPINE VERGE",region:"BLACKPINE ROAD",floor:0x354c3d,accent:0x6f9b69,intro:"Ancient pines crowd the road. Bootprints and drag marks lead north."},
+        {name:"HUNTER'S FORD",region:"BLACKPINE ROAD",floor:0x3d5556,accent:0x64a4bd,intro:"Cold water rushes over a broken ford while raiders guard the stones."},
+        {name:"THE HANGING STONES",region:"BLACKPINE ROAD",floor:0x465346,accent:0x9b8f6d,intro:"Runes burn on standing stones older than Dunmere."},
+        {name:"CAMP OF CROWS",region:"BLACKPINE ROAD",floor:0x4d4b3d,accent:0xa84b4b,intro:"Malrec's scouts have made camp beneath a sky black with crows."},
+        {name:"MOONFALL COURTYARD",region:"MOONFALL ABBEY",floor:0x5a5b61,accent:0xc3c7dd,intro:"The ruined abbey rises from the forest, its silver doors torn open."},
+        {name:"HALL OF SAINTS",region:"MOONFALL ABBEY",floor:0x62616a,accent:0xe6d59a,intro:"Headless saints watch cultists deface the old mosaics."},
+        {name:"THE SCRIPTORIUM",region:"MOONFALL ABBEY",floor:0x585463,accent:0x76558f,intro:"Violet formulae crawl across books that should have turned to dust."},
+        {name:"BELL TOWER CRYPT",region:"MOONFALL ABBEY",floor:0x4b5058,accent:0x8d99a6,intro:"The abbey bell tolls below ground though no hand pulls its rope."},
+        {name:"THE BROKEN RELIQUARY",region:"MOONFALL ABBEY",floor:0x55515d,accent:0xffd166,intro:"A shattered altar hides a stair descending into red-lit stone."},
+        {name:"EMBERDEEP DESCENT",region:"EMBERDEEP",floor:0x493f3b,accent:0xf08b45,intro:"Heat rolls up the mine stair. Chains vanish into the dark."},
+        {name:"SULFUR GALLERY",region:"EMBERDEEP",floor:0x51483c,accent:0xe6b85c,intro:"Yellow crystals hiss beside pools of boiling water."},
+        {name:"THE CHAIN BRIDGE",region:"EMBERDEEP",floor:0x3e4146,accent:0xc17a55,intro:"A narrow bridge sways above a river of fire."},
+        {name:"FURNACE VAULT",region:"EMBERDEEP",floor:0x4d403b,accent:0xd9553f,intro:"Enchanted furnaces hammer weapons for Malrec's gathering army."},
+        {name:"THE ASHEN RESERVOIR",region:"EMBERDEEP",floor:0x45484b,accent:0x9aa6aa,intro:"A black lake mirrors the impossible tower above it."},
+        {name:"BLACKGLASS GATE",region:"BLACKGLASS SPIRE",floor:0x353647,accent:0x76558f,intro:"The spire's gate opens like a wound in polished black stone."},
+        {name:"HALL OF MIRRORS",region:"BLACKGLASS SPIRE",floor:0x424255,accent:0xb09bc4,intro:"Each mirror shows a coast already kneeling to Malrec."},
+        {name:"VIOLET LABORATORY",region:"BLACKGLASS SPIRE",floor:0x3f394f,accent:0x9f6cc1,intro:"Bottled lightning feeds a map of the Lantern Coast."},
+        {name:"THE HIGH OBSERVATORY",region:"BLACKGLASS SPIRE",floor:0x343849,accent:0x6f8fc8,intro:"Stars turn overhead in patterns no mortal sky should hold."},
+        {name:"MALREC'S SANCTUM",region:"BLACKGLASS SPIRE",floor:0x302f42,accent:0xc56cff,intro:"Malrec waits before a crown of violet flame, his conquest ritual nearly complete."}
+      ];
+      index=Math.max(0,Math.min(19,index));
+      const room=rooms[index], heroX=9, heroY=entry==="north"?2:12;
+      this.prepareCombat("chapter2",heroX,heroY,"Cross "+room.name);
+      this.chapterTwoRoom=index;
+      this.save.chapterTwoRoom=index;
+      this.save.chapterStage="chapter2";
+      if(!Array.isArray(this.save.clearedChapterTwoRooms)) this.save.clearedChapterTwoRooms=[];
+      saveGame(this.save);
+
+      const g=this.add.graphics(),T=TILE;
+      const block=(x,y,w=1,h=1)=>{for(let yy=y;yy<y+h;yy++) for(let xx=x;xx<x+w;xx++) this.blocked.add(xx+","+yy);};
+      const prop=(x,y,color=0x343b42)=>{
+        block(x,y);
+        g.fillStyle(0x151b23,0.45).fillEllipse(x*T+25,y*T+38,42,12);
+        g.fillStyle(color).fillRect(x*T+7,y*T+7,34,34);
+        g.lineStyle(3,room.accent,0.7).strokeRect(x*T+10,y*T+10,28,28);
+      };
+      for(let y=0;y<15;y++) for(let x=0;x<20;x++) {
+        const shade=(x*17+y*11+index)%3;
+        const color=shade===0?room.floor:(shade===1?Phaser.Display.Color.IntegerToColor(room.floor).darken(7).color:Phaser.Display.Color.IntegerToColor(room.floor).lighten(5).color);
+        g.fillStyle(color).fillRect(x*T,y*T,T,T);
+        g.lineStyle(2,0x202632,0.48).strokeRect(x*T,y*T,T,T);
+        if((x*7+y*13+index)%11===0) {
+          g.fillStyle(room.accent,0.18).fillCircle(x*T+12,y*T+30,7);
+          g.fillStyle(room.accent,0.28).fillRect(x*T+8,y*T+36,26,3);
+        }
+      }
+      for(let x=0;x<20;x++){block(x,0);block(x,14);}
+      for(let y=0;y<15;y++){block(0,y);block(19,y);}
+      g.fillStyle(0x202632).fillRect(0,0,MAP_WIDTH,T).fillRect(0,14*T,MAP_WIDTH,T).fillRect(0,0,T,MAP_HEIGHT).fillRect(19*T,0,T,MAP_HEIGHT);
+      for(let x=0;x<20;x++) {
+        g.lineStyle(3,room.accent,0.35).strokeRect(x*T+3,3,T-6,T-6);
+        g.lineStyle(3,room.accent,0.35).strokeRect(x*T+3,14*T+3,T-6,T-6);
+      }
+      for(const doorX of [9,10]) {
+        this.blocked.delete(doorX+",0"); this.blocked.delete(doorX+",14");
+        g.fillStyle(0x111722).fillRect(doorX*T,0,T,T).fillRect(doorX*T,14*T,T,T);
+        g.fillStyle(room.accent).fillRect(doorX*T+5,T-7,T-10,5).fillRect(doorX*T+5,14*T+2,T-10,5);
+      }
+      const cleared=this.save.clearedChapterTwoRooms.includes(index);
+      if(index===19&&!cleared){block(9,0,2,1);g.fillStyle(0x76558f).fillRect(9*T,0,2*T,T);}
+
+      // Region-specific landmarks make every five-room act visually distinct.
+      const region=Math.floor(index/5);
+      if(region===0) {
+        for(const [x,y] of [[2,3],[17,3],[3,10],[16,11],[5,5],[14,6]]) {
+          block(x,y); g.fillStyle(0x26392f).fillCircle(x*T+24,y*T+20,25);
+          g.fillStyle(0x49724d).fillTriangle(x*T+2,y*T+27,x*T+24,y*T-10,x*T+46,y*T+27);
+          g.fillStyle(0x5b3b2f).fillRect(x*T+20,y*T+23,8,25);
+        }
+        g.fillStyle(0x8a7357).fillRect(T,7*T+18,18*T,12);
+      } else if(region===1) {
+        for(const [x,y] of [[3,3],[16,3],[3,11],[16,11]]) prop(x,y,0x6b6d75);
+        g.lineStyle(5,0xd8cfad,0.32).strokeCircle(10*T,7*T,92);
+        g.fillStyle(room.accent,0.18).fillCircle(10*T,7*T,70);
+      } else if(region===2) {
+        for(const [x,y] of [[2,4],[17,4],[3,11],[16,10]]) {
+          block(x,y); g.fillStyle(0x2b2221).fillRect(x*T+4,y*T+8,40,36);
+          g.fillStyle(0xd9553f,0.65).fillCircle(x*T+24,y*T+22,15);
+          g.fillStyle(0xffd166).fillCircle(x*T+24,y*T+22,6);
+        }
+        g.fillStyle(0xd9553f,0.25).fillRect(T,7*T+34,18*T,8);
+      } else {
+        for(const [x,y] of [[3,3],[16,3],[3,11],[16,11],[6,7],[13,7]]) {
+          block(x,y); g.fillStyle(0x151525).fillRect(x*T+5,y*T+3,38,42);
+          g.fillStyle(room.accent,0.55).fillRect(x*T+11,y*T+7,26,34);
+          g.fillStyle(0xe7dcff,0.3).fillRect(x*T+15,y*T+9,5,28);
+        }
+        g.lineStyle(4,room.accent,0.42).strokeCircle(10*T,7*T,76);
+      }
+
+      const encounters=[
+        [["goblin",7,7,13,3],["goblin",13,7,13,3]],
+        [["goblin",6,6,14,3],["orc",13,9,20,4]],
+        [["orc",7,6,21,4],["goblin",13,10,15,3]],
+        [["cultist",10,6,18,4]],
+        [["orc",6,8,22,4],["cultist",14,8,19,4]],
+        [["cultist",7,6,20,4],["goblin",13,9,16,3]],
+        [["cultist",6,7,21,4],["cultist",14,7,21,4]],
+        [["hobgoblin",10,6,25,5],["cultist",10,10,21,4]],
+        [["cultist",7,5,22,5],["orc",13,9,24,5]],
+        [["hobgoblin",7,8,27,5],["cultist",13,8,23,5]],
+        [["orc",7,6,25,5],["cultist",13,9,24,5]],
+        [["cultist",6,7,25,5],["cultist",14,7,25,5]],
+        [["hobgoblin",10,6,29,6],["orc",10,10,27,5]],
+        [["orc",6,8,28,6],["orc",14,8,28,6],["cultist",10,5,25,5]],
+        [["hobgoblin",7,7,31,6],["cultist",13,7,27,6]],
+        [["cultist",7,6,28,6],["hobgoblin",13,9,32,6]],
+        [["cultist",6,7,29,6],["cultist",14,7,29,6]],
+        [["hobgoblin",7,9,34,7],["cultist",13,6,31,6]],
+        [["cultist",6,8,32,7],["hobgoblin",14,8,36,7],["cultist",10,5,32,7]],
+        [["cultist",6,9,34,7],["cultist",14,9,34,7],["malrec",10,4,60,8]]
+      ][index];
+      const reserved=encounters.map(([,x,y])=>[x,y]);
+      const loot=["blackpine_sabre",null,"warded_coat",null,"raven_cloak","pilgrim_boots",null,"mirror_shield",null,"sapphire_focus","ember_maul",null,"rune_mail",null,"starstep_boots","spellguard_shield",null,"shadow_mantle",null,null][index];
+      if(loot){const p=this.getSeededChestPosition(loot,100+index,reserved);this.spawnLoot(loot,p.x,p.y);}
+      const classLoot={
+        Fighter:{room:5,id:"lionguard_shield"},Ranger:{room:9,id:"storm_quiver"},
+        Rogue:{room:12,id:"duskfang"},Cleric:{room:15,id:"solar_icon"},Wizard:{room:17,id:"malrec_grimoire"}
+      };
+      const special=classLoot[this.save.className];
+      if(special&&special.room===index){const p=this.getSeededChestPosition(special.id,100+index,reserved);this.spawnLoot(special.id,p.x,p.y);}
+
+      if(!cleared) encounters.forEach(([type,x,y,hp,damage],i)=>{
+        const id=index===19&&type==="malrec"?"malrec":"chapter2-"+index+"-"+i;
+        const name=id==="malrec"?"Malrec the Violet":(type==="cultist"?"Violet Acolyte":(type==="hobgoblin"?"Blackglass Captain":(type==="orc"?"Ashfang Veteran":"Blackpine Goblin")));
+        this.spawnEnemy(id,type,x,y,hp,damage,name);
+      });
+      this.createCombatHero();
+      this.add.text(18,18,(index+1)+"/20  "+room.region+"  ·  "+room.name,{
+        fontFamily:"Silkscreen, monospace",fontSize:"13px",fontStyle:"bold",color:"#ffefc1",resolution:24,
+        backgroundColor:"#182847",padding:{x:8,y:5}
+      }).setDepth(72).setScrollFactor(0);
+      if(!cleared) this.openDialogue([room.intro,index<19?"Defeat the guards and continue north.":"Defeat Malrec and break the conquest ritual."]);
+    }
+
     onCombatCleared() {
       this.save.playerHp=this.playerMaxHp;
       if(this.area==="raid") {
@@ -3029,6 +3227,21 @@
           "The final scout is defeated.",
           "Through the trees, Greywatch's shattered gate stands open.",
           "The eastern road is clear. Walk through the gate when you are ready."
+        ]);
+      } else if(this.area==="chapter2") {
+        if(!Array.isArray(this.save.clearedChapterTwoRooms)) this.save.clearedChapterTwoRooms=[];
+        if(!this.save.clearedChapterTwoRooms.includes(this.chapterTwoRoom)) this.save.clearedChapterTwoRooms.push(this.chapterTwoRoom);
+        this.save.chapterTwoRoom=this.chapterTwoRoom;
+        this.save.playerHp=this.playerHp;
+        if(this.chapterTwoRoom===19){this.blocked.delete("9,0");this.blocked.delete("10,0");}
+        saveGame(this.save);
+        this.openDialogue(this.chapterTwoRoom===19 ? [
+          "Malrec falls and the violet crown shatters into harmless sparks.",
+          "Across the Lantern Coast, his war banners burn to ash.",
+          "The northern arch opens. Step through when you are ready."
+        ] : [
+          "The way forward is clear.",
+          "Malrec\'s trail continues north through "+(this.chapterTwoRoom<4?"Blackpine":this.chapterTwoRoom<9?"Moonfall Abbey":this.chapterTwoRoom<14?"Emberdeep":"Blackglass Spire")+"."
         ]);
       } else if(this.area==="dungeon") {
         if(!Array.isArray(this.save.clearedRooms)) this.save.clearedRooms=[];
@@ -3057,6 +3270,7 @@
       if(this.area==="raid") this.buildRaid();
       else if(this.area==="road") this.buildRoad();
       else if(this.area==="dungeon") this.buildDungeonRoom(this.dungeonRoom,"south");
+      else if(this.area==="chapter2") this.buildChapterTwoRoom(this.chapterTwoRoom,"south");
       else this.buildCastle();
     }
 
@@ -3073,11 +3287,33 @@
       this.text(80,20,"DUNMERE IS SAVED",10,"#ffd166",0.5);
       this.text(80,92,"THE WIZARD'S SHADOW",8,"#ffefc1",0.5);
       this.text(80,108,"CHAPTER ONE COMPLETE",6,"#b7d1b0",0.5);
-      this.text(80,126,"Z: RETURN TO TITLE",5,"#ffd166",0.5);
+      this.text(80,126,"Z: BEGIN CHAPTER TWO   X: TITLE",5,"#ffd166",0.5);
       this.openDialogue([
         "Varkul falls. In his war chest you find orders sealed in violet wax.",
         "The Ashfangs served a wizard called Malrec, who is gathering armies to conquer the Lantern Coast.",
         "You return to Dunmere as its defender—but your first adventure has only revealed a greater threat."
+      ]);
+    }
+
+    showChapterTwoEnding() {
+      this.clearScene();
+      this.mode="ending2";
+      this.cameras.main.setBackgroundColor(0x141426);
+      const g=this.add.graphics();
+      g.fillStyle(0x141426).fillRect(0,0,WIDTH,HEIGHT);
+      g.fillStyle(0x302f42).fillCircle(240,145,118);
+      g.fillStyle(0x76558f,0.5).fillCircle(240,145,84);
+      g.fillStyle(0xffd166).fillCircle(240,145,46);
+      g.fillStyle(0xffefc1).fillCircle(240,145,30);
+      g.lineStyle(6,0xc56cff,0.75).strokeCircle(240,145,66);
+      this.text(80,20,"THE VIOLET CROWN FALLS",9,"#ffd166",0.5);
+      this.text(80,92,"THE SHATTERED SIGIL",8,"#ffefc1",0.5);
+      this.text(80,108,"CHAPTER TWO COMPLETE",6,"#b7d1b0",0.5);
+      this.text(80,126,"Z: RETURN TO TITLE",5,"#ffd166",0.5);
+      this.openDialogue([
+        "Malrec's spell breaks. Dawn reaches Blackglass Spire for the first time in a generation.",
+        "The armies he gathered scatter, and the settlements of the Lantern Coast ring their bells.",
+        "You return to the Lost Light no longer an untested orphan, but a hero with a name of your own."
       ]);
     }
 
@@ -3149,7 +3385,12 @@
       }
 
       if (this.mode === "ending") {
-        if (this.pressed(this.keys.z, this.keys.enter, this.keys.space)) this.showTitle();
+        if (this.pressed(this.keys.z, this.keys.enter, this.keys.space)) this.beginChapterTwo();
+        else if (this.pressed(this.keys.x, this.keys.esc)) this.showTitle();
+        return;
+      }
+      if (this.mode === "ending2") {
+        if (this.pressed(this.keys.z, this.keys.enter, this.keys.space, this.keys.x, this.keys.esc)) this.showTitle();
         return;
       }
 
