@@ -197,7 +197,7 @@
             g.fillStyle(COLORS.gold).fillRect(11, 20, 2, 2);
           }
 
-          if (key.startsWith("hero-")) {
+          if (key.startsWith("hero-") || ["fighter","ranger","rogue","cleric","wizard"].includes(role)) {
             if (role === "fighter") {
               // Steel breastplate, shield boss, helmet rim and longsword.
               g.fillStyle(0x667586).fillRect(7,18,10,6);
@@ -242,6 +242,41 @@
               g.fillStyle(0x9ad8e1).fillTriangle(18,10,21,3,24,10);
               g.fillStyle(0x704536).fillRect(3,19,4,6);
             }
+          }
+
+          // Named NPC silhouettes, professions and personal props.
+          if (key === "mara") {
+            g.fillStyle(0xf3e6c8).fillRect(7,18,10,9);
+            g.fillStyle(0xc99157).fillRect(11,19,2,7).fillRect(8,22,8,2);
+            g.fillStyle(0x704536).fillRect(4,17,3,10);
+            g.fillStyle(0xe6b85c).fillCircle(5,24,2);
+            if (direction !== "up") {
+              g.fillStyle(0xb7bdad).fillEllipse(20,22,7,4);
+              g.fillStyle(0xffefc1).fillRect(18,20,4,2);
+            }
+          } else if (key === "villager-a") {
+            g.fillStyle(0xb28d6d).fillRect(4,16,16,4);
+            g.fillStyle(0x76558f).fillTriangle(5,19,12,29,19,19);
+            g.fillStyle(0x704536).fillRect(18,20,5,7);
+            g.fillStyle(0xd6b16d).fillRect(19,18,3,2).fillRect(19,23,3,2);
+          } else if (key === "villager-b") {
+            g.fillStyle(0x37475b).fillRect(5,5,14,3).fillRect(8,3,8,3);
+            g.fillStyle(0x477b9d).fillRect(6,18,12,4);
+            g.fillStyle(0x8b5a3d).fillRect(2,17,3,12);
+            g.fillStyle(0xb8c1b3).fillRect(1,15,5,4);
+            g.fillStyle(0xe6b85c).fillRect(8,23,8,2);
+          } else if (key === "villager-c") {
+            g.fillStyle(0xc99157).fillRect(6,16,12,3);
+            g.fillStyle(0x426748).fillTriangle(5,19,12,29,19,19);
+            if (direction !== "up") {
+              g.fillStyle(0xb89b62).fillRect(18,18,5,8);
+              g.fillStyle(0xffefc1).fillRect(19,19,3,6);
+            }
+          }
+          // Subtle facial highlights and garment seams at native pixel scale.
+          if (direction !== "up") {
+            g.fillStyle(0xf7d7a8,0.7).fillRect(direction==="side"?15:8,10,2,1);
+            g.fillStyle(0x2a3140,0.55).fillRect(8,25,8,1);
           }
 
           g.generateTexture(key + "-" + direction, 24, 32);
@@ -316,9 +351,29 @@
               g.fillStyle(0xf3e1b0).fillTriangle(7, 13, 9, 17, 11, 13).fillTriangle(14, 13, 16, 17, 18, 13);
             }
           }
+          // Layered monster detail: scars, ear interiors, straps, pouches and armor wear.
+          if (kind === "goblin") {
+            g.fillStyle(0xb57a70).fillTriangle(3,7,2,5,4,10).fillTriangle(21,7,22,5,20,10);
+            g.fillStyle(0x3d2f2a).fillRect(5,19,14,2);
+            g.fillStyle(0x9b6c3f).fillRect(6,20,4,5);
+            g.fillStyle(0xd7c69a).fillRect(13,14,2,2);
+            g.fillStyle(0x88464b).fillRect(7,17,3,2).fillRect(15,22,3,2);
+            if(direction!=="up") g.fillStyle(0x3e4934).fillRect(6,11,3,1);
+          } else if (kind === "orc") {
+            g.fillStyle(0x59654a).fillRect(4,16,16,3);
+            g.fillStyle(0x79877b).fillRect(3,16,6,5);
+            g.fillStyle(0x313840).fillRect(10,19,4,3);
+            g.fillStyle(0x925446).fillRect(15,6,3,1).fillRect(6,12,4,1);
+            g.fillStyle(0x6e4934).fillRect(5,24,14,2);
+          }
           if (kind === "hobgoblin") {
-            g.fillStyle(0x222837).fillRect(7, 1, 10, 3);
-            g.fillStyle(0xb83f42).fillRect(10, 0, 4, 5);
+            g.fillStyle(0x222837).fillRect(7,1,10,3);
+            g.fillStyle(0xb83f42).fillRect(10,0,4,5);
+            g.fillStyle(0x7f8c92).fillRect(4,15,4,9).fillRect(16,15,4,9);
+            g.fillStyle(0xd5b35e).fillRect(5,17,2,2).fillRect(17,17,2,2);
+            g.fillStyle(0x282f3b).fillRect(5,23,14,3);
+            g.fillStyle(0x8f343c).fillRect(8,24,8,2);
+            if(direction!=="up") g.fillStyle(0xe6b85c).fillRect(11,7,2,2);
           }
           g.generateTexture(key + "-" + direction, 24, 32);
           g.destroy();
@@ -332,16 +387,21 @@
       chest.fillStyle(0x182847).fillRect(1,6,22,17);
       chest.fillStyle(0x704536).fillRect(3,8,18,13);
       chest.fillStyle(0xb97845).fillRect(4,5,16,7);
+      chest.fillStyle(0x4d302a).fillRect(4,13,16,2);
       chest.fillStyle(0xe6b85c).fillRect(10,9,5,8);
       chest.fillStyle(0xffd166).fillRect(11,10,3,4);
+      chest.fillStyle(0xa9b8b0).fillRect(4,9,2,10).fillRect(18,9,2,10);
+      chest.fillStyle(0xd9a45a).fillRect(6,7,12,2);
       chest.lineStyle(2,0x2b2730).strokeRect(3,7,18,15);
       chest.generateTexture("treasure-chest",24,24);
       chest.destroy();
 
       const flame = this.make.graphics({ add: false });
-      flame.fillStyle(COLORS.red).fillRect(4, 7, 8, 8);
-      flame.fillStyle(COLORS.gold).fillRect(6, 3, 5, 10);
-      flame.fillStyle(COLORS.white).fillRect(7, 7, 3, 6);
+      flame.fillStyle(0x7d3340,0.45).fillCircle(8,9,8);
+      flame.fillStyle(COLORS.red).fillTriangle(2,14,7,5,9,14).fillTriangle(7,14,11,1,14,14);
+      flame.fillStyle(0xf08b45).fillTriangle(4,14,8,4,12,14);
+      flame.fillStyle(COLORS.gold).fillTriangle(6,14,9,7,11,14);
+      flame.fillStyle(COLORS.white).fillRect(8,10,2,4);
       flame.generateTexture("flame", 16, 16);
       flame.destroy();
     }
