@@ -197,12 +197,64 @@
             g.fillStyle(COLORS.gold).fillRect(11, 20, 2, 2);
           }
 
+          if (key.startsWith("hero-")) {
+            if (role === "fighter") {
+              // Steel breastplate, shield boss, helmet rim and longsword.
+              g.fillStyle(0x667586).fillRect(7,18,10,6);
+              g.fillStyle(0xb8c1b7).fillRect(8,18,8,2).fillRect(11,19,2,5);
+              g.fillStyle(0xe6b85c).fillRect(10,21,4,3);
+              g.fillStyle(0x303b49).fillRect(5,6,14,3).fillRect(6,5,12,2);
+              g.fillStyle(0xa9b8b0).fillCircle(3,21,6);
+              g.fillStyle(0xe6b85c).fillCircle(3,21,2);
+              g.fillStyle(0xd8ded4).fillRect(20,9,2,16);
+              g.fillStyle(0x704536).fillRect(18,23,6,2);
+            } else if (role === "ranger") {
+              // Layered forest cloak, hood, bow and visible arrow fletching.
+              g.fillStyle(0x294b39).fillTriangle(5,17,12,10,19,17).fillTriangle(5,17,12,30,19,17);
+              g.fillStyle(0x6f9258).fillRect(8,18,8,3);
+              g.fillStyle(0x704536).fillRect(19,7,2,20);
+              g.lineStyle(2,0xd1b06e).strokeCircle(20,17,8);
+              g.fillStyle(0xe6b85c).fillTriangle(17,6,20,2,21,8).fillTriangle(20,7,23,3,23,9);
+            } else if (role === "rogue") {
+              // Deep hood, half mask, crossed belt and paired daggers.
+              g.fillStyle(0x262634).fillTriangle(4,10,12,2,20,10).fillRect(5,8,14,6);
+              if (direction !== "up") g.fillStyle(0x30303b).fillRect(7,13,10,4);
+              g.fillStyle(0x9b4f61).fillRect(7,19,11,2);
+              g.fillStyle(0x704536).fillRect(8,17,2,9).fillRect(15,17,2,9);
+              g.fillStyle(0xc5ccc3).fillTriangle(2,19,7,20,2,24).fillTriangle(22,19,17,20,22,24);
+            } else if (role === "cleric") {
+              // Ivory tabard, sunburst holy symbol, mantle and war mace.
+              g.fillStyle(0xf1e6c5).fillRect(7,17,10,10);
+              g.fillStyle(0xc89b4d).fillRect(11,18,2,8).fillRect(8,21,8,2);
+              g.fillStyle(0xffd166).fillCircle(12,21,3);
+              g.fillStyle(0x8b5f45).fillRect(6,16,12,3);
+              g.fillStyle(0x707d82).fillRect(20,11,3,16);
+              g.fillStyle(0xb9c2b9).fillCircle(21,9,5);
+              g.fillStyle(0xe6b85c).fillCircle(21,9,2);
+            } else if (role === "wizard") {
+              // Starred robe, broad pointed hat, satchel and crystal staff.
+              g.fillStyle(0x293d75).fillTriangle(5,17,12,30,19,17);
+              g.fillStyle(0x76558f).fillRect(6,17,12,3);
+              g.fillStyle(0xffd166).fillRect(9,22,2,2).fillRect(15,25,2,2).fillRect(12,18,2,2);
+              g.fillStyle(0x2c3768).fillTriangle(3,8,13,0,20,8).fillRect(2,7,20,3);
+              g.fillStyle(0xffd166).fillRect(11,3,2,2).fillRect(16,6,2,2);
+              g.fillStyle(0x6b432f).fillRect(20,10,2,18);
+              g.fillStyle(0x9ad8e1).fillTriangle(18,10,21,3,24,10);
+              g.fillStyle(0x704536).fillRect(3,19,4,6);
+            }
+          }
+
           g.generateTexture(key + "-" + direction, 24, 32);
           g.destroy();
         });
       };
 
       makePerson("hero", 0x3f6380, 0x5b352d, "hero");
+      makePerson("hero-fighter", 0x8f3f43, 0x5b352d, "fighter");
+      makePerson("hero-ranger", 0x3f7049, 0x704536, "ranger");
+      makePerson("hero-rogue", 0x503d68, 0x24242c, "rogue");
+      makePerson("hero-cleric", 0xd8c58f, 0x8b6244, "cleric");
+      makePerson("hero-wizard", 0x3b548d, 0x4c354f, "wizard");
       MENTORS.forEach(m => makePerson(m.id, m.color, 0x2c2730, m.id));
       makePerson("mara", 0x9b6647, 0x6b3e32, "innkeeper");
       makePerson("villager-a", 0x7c5b8f, 0x4b302a, "villager");
@@ -292,6 +344,11 @@
       flame.fillStyle(COLORS.white).fillRect(7, 7, 3, 6);
       flame.generateTexture("flame", 16, 16);
       flame.destroy();
+    }
+
+    getHeroTexture(direction="down") {
+      const classKey=(this.save.className || "").toLowerCase();
+      return classKey ? "hero-"+classKey+"-"+direction : "hero-"+direction;
     }
 
     clearScene() {
@@ -516,7 +573,7 @@
       this.drawFurniture(g);
       this.text(80, 4, "LOST LIGHT INN · MORNING", 6, "#ffefc1", 0.5);
 
-      this.hero = this.add.sprite(this.heroTile.x * TILE + 24, this.heroTile.y * TILE + 12, "hero-down")
+      this.hero = this.add.sprite(this.heroTile.x * TILE + 24, this.heroTile.y * TILE + 12, this.getHeroTexture("down"))
         .setDepth(10).setScale(2);
 
       this.npcs = MENTORS.map(m => {
@@ -752,7 +809,7 @@
       this.text(80,4,"DUNMERE · LANTERN COAST",6,"#ffefc1",0.5);
       this.text(4,127,"VILLAGE SQUARE",5,"#ffd166");
       this.text(156,127,"Z: TALK",5,"#d7dfc4",1);
-      this.hero=this.add.sprite(9*T+24,5*T+12,"hero-down").setDepth(10).setScale(2);
+      this.hero=this.add.sprite(9*T+24,5*T+12,this.getHeroTexture("down")).setDepth(10).setScale(2);
 
       const villagers=[
         {id:"village-elin",x:7,y:7,texture:"villager-a-down",intro:["ELIN: Happy birthday!","Mara has half the village preparing your supper.","Stay near the square. Something has the gulls frightened."]},
@@ -1002,6 +1059,10 @@
       this.save.equipment = { weapon:null, armor:null, trinket:null };
       this.save.collectedLoot = [];
       saveGame(this.save);
+      if (this.hero) {
+        const direction=this.facing.y<0?"up":(this.facing.x!==0?"side":"down");
+        this.hero.setTexture(this.getHeroTexture(direction));
+      }
       this.clearChoice();
       this.openDialogue([
         npc.name.toUpperCase() + ": Then it is decided.",
@@ -1015,11 +1076,11 @@
       if (this.busy || this.mode !== "world") return;
       this.facing = { x: dx, y: dy };
       if (dy < 0) {
-        this.hero.setTexture("hero-up").setFlipX(false);
+        this.hero.setTexture(this.getHeroTexture("up")).setFlipX(false);
       } else if (dy > 0) {
-        this.hero.setTexture("hero-down").setFlipX(false);
+        this.hero.setTexture(this.getHeroTexture("down")).setFlipX(false);
       } else {
-        this.hero.setTexture("hero-side").setFlipX(dx < 0);
+        this.hero.setTexture(this.getHeroTexture("side")).setFlipX(dx < 0);
       }
       const nx = this.heroTile.x + dx;
       const ny = this.heroTile.y + dy;
@@ -1301,7 +1362,7 @@
     }
 
     createCombatHero() {
-      this.hero = this.add.sprite(this.heroTile.x * TILE + 24, this.heroTile.y * TILE + 12, "hero-up")
+      this.hero = this.add.sprite(this.heroTile.x * TILE + 24, this.heroTile.y * TILE + 12, this.getHeroTexture("up"))
         .setDepth(20).setScale(2);
       this.cameras.main.setBounds(0, 0, MAP_WIDTH, MAP_HEIGHT);
       this.cameras.main.startFollow(this.hero, true, 0.18, 0.18);
@@ -1525,7 +1586,7 @@
 
       const enemySprite=this.add.sprite(359,130,enemy.type+"-side")
         .setDepth(82).setScrollFactor(0).setScale(4.8).setFlipX(true);
-      const heroSprite=this.add.sprite(112,236,"hero-up")
+      const heroSprite=this.add.sprite(112,236,this.getHeroTexture("up"))
         .setDepth(82).setScrollFactor(0).setScale(5.2);
       this.battleUi.push(enemySprite,heroSprite);
 
