@@ -70,14 +70,14 @@
     watch_blade: { name:"Watchman's Blade", slot:"weapon", damage:1, description:"+1 damage. A serviceable sword recovered from the gatehouse." },
     quilted_jack: { name:"Quilted Jack", slot:"armor", hp:2, description:"+2 maximum HP. Patched but sturdy barracks armor." },
     saint_token: { name:"Silver Saint Token", slot:"trinket", hp:1, description:"+1 maximum HP. A small emblem from the ruined chapel." },
-    marsh_boots: { name:"Marshwalker Boots", slot:"armor", hp:1, description:"+1 maximum HP. Keeps steady footing in flooded stonework." },
+    marsh_boots: { name:"Marshwalker Boots", slot:"boots", hp:1, description:"+1 maximum HP. Keeps steady footing in flooded stonework." },
     jailer_ring: { name:"Jailer's Iron Ring", slot:"trinket", armor:1, description:"+1 armor. Heavy iron engraved with Greywatch's crest." },
     tempered_hatchet: { name:"Tempered Hatchet", slot:"weapon", damage:1, description:"+1 damage. The finest surviving weapon in the armory." },
     hearth_charm: { name:"Hearthkeeper Charm", slot:"trinket", healing:1, description:"+1 healing from draughts and healing abilities." },
     scribe_lens: { name:"Runed Scribe Lens", slot:"trinket", mp:1, description:"+1 maximum MP. The glass still holds a trace of old magic." },
-    captain_mantle: { name:"Captain's Mantle", slot:"armor", hp:2, description:"+2 maximum HP. A weathered cloak from the war room." },
-    greywatch_buckler: { name:"Greywatch Buckler", slot:"armor", className:"Fighter", armor:1, hp:1, unique:true, description:"Fighter only. +1 armor and +1 maximum HP." },
-    hawk_quiver: { name:"Hawkfeather Quiver", slot:"trinket", className:"Ranger", damage:1, unique:true, description:"Ranger only. +1 damage with every attack." },
+    captain_mantle: { name:"Captain's Mantle", slot:"cloak", hp:2, description:"+2 maximum HP. A weathered cloak from the war room." },
+    greywatch_buckler: { name:"Greywatch Buckler", slot:"shield", className:"Fighter", armor:1, hp:1, unique:true, description:"Fighter only. +1 armor and +1 maximum HP." },
+    hawk_quiver: { name:"Hawkfeather Quiver", slot:"cloak", className:"Ranger", damage:1, unique:true, description:"Ranger only. +1 damage with every attack." },
     nightglass_dirk: { name:"Nightglass Dirk", slot:"weapon", className:"Rogue", damage:1, unique:true, description:"Rogue only. +1 damage, including Sneak Attack scaling." },
     dawn_reliquary: { name:"Reliquary of Dawn", slot:"trinket", className:"Cleric", mp:2, healing:1, unique:true, description:"Cleric only. +2 maximum MP and +1 healing." },
     violet_spellshard: { name:"Violet Spellshard", slot:"trinket", className:"Wizard", mp:2, magic:1, unique:true, description:"Wizard only. +2 maximum MP and +1 Magic Missile damage." }
@@ -424,8 +424,8 @@
       if(!classKey || !this.textures || !this.textures.exists(baseKey)) return baseKey;
       this.ensureInventory();
       const eq=this.save.equipment || {};
-      if(!eq.weapon&&!eq.armor&&!eq.trinket) return baseKey;
-      const signature=[classKey,eq.weapon||"none",eq.armor||"none",eq.trinket||"none",direction]
+      if(!eq.weapon&&!eq.armor&&!eq.boots&&!eq.shield&&!eq.trinket&&!eq.cloak) return baseKey;
+      const signature=[classKey,eq.weapon||"none",eq.armor||"none",eq.boots||"none",eq.shield||"none",eq.trinket||"none",eq.cloak||"none",direction]
         .join("-").replace(/[^a-z0-9-]/gi,"");
       const compositeKey="hero-equipped-"+signature;
       if(this.textures.exists(compositeKey)) return compositeKey;
@@ -459,22 +459,22 @@
     getEquipmentTextureKeys(direction="down") {
       this.ensureInventory();
       const eq=this.save.equipment || {};
-      const signature=[eq.weapon||"none",eq.armor||"none",eq.trinket||"none",direction].join("-").replace(/[^a-z0-9-]/gi,"");
+      const signature=[eq.weapon||"none",eq.armor||"none",eq.boots||"none",eq.shield||"none",eq.trinket||"none",eq.cloak||"none",direction].join("-").replace(/[^a-z0-9-]/gi,"");
       const backKey="hero-gear-back-"+signature;
       const frontKey="hero-gear-front-"+signature;
       if(this.textures.exists(backKey)&&this.textures.exists(frontKey)) return {backKey,frontKey};
 
       const back=this.make.graphics({add:false});
       const front=this.make.graphics({add:false});
-      const weapon=eq.weapon,armor=eq.armor,trinket=eq.trinket;
+      const weapon=eq.weapon,armor=eq.armor,boots=eq.boots,shield=eq.shield,trinket=eq.trinket,cloak=eq.cloak;
 
       // Everything is drawn on the character's exact native 24×32 pixel grid.
-      if(armor==="captain_mantle") {
+      if(cloak==="captain_mantle") {
         back.fillStyle(0x182847).fillTriangle(4,16,12,31,20,16);
         back.fillStyle(0x7d3541).fillTriangle(5,16,12,29,19,16);
         back.fillStyle(0xe6b85c).fillRect(7,16,10,2);
       }
-      if(trinket==="hawk_quiver") {
+      if(cloak==="hawk_quiver") {
         back.fillStyle(0x182847).fillRect(2,9,6,19);
         back.fillStyle(0x5b3b2f).fillRect(3,10,4,17);
         back.fillStyle(0xe6d59a).fillTriangle(2,10,4,4,6,10).fillTriangle(5,10,7,3,9,10);
@@ -486,12 +486,14 @@
         front.fillStyle(0x9b704d).fillRect(6,17,12,9);
         front.fillStyle(0xd0a86b).fillRect(7,18,10,2).fillRect(7,22,10,1);
         front.fillStyle(0x704536).fillRect(11,17,2,9);
-      } else if(armor==="greywatch_buckler") {
+      }
+      if(shield==="greywatch_buckler") {
         front.fillStyle(0x182847).fillCircle(4,21,6);
         front.fillStyle(0xa9b8b0).fillCircle(4,21,5);
         front.fillStyle(0x405164).fillCircle(4,21,3);
         front.fillStyle(0xe6b85c).fillCircle(4,21,1);
-      } else if(armor==="marsh_boots") {
+      }
+      if(boots==="marsh_boots") {
         front.fillStyle(0x182847).fillRect(4,25,8,7).fillRect(12,25,8,7);
         front.fillStyle(0x405642).fillRect(5,26,6,5).fillRect(13,26,6,5);
         front.fillStyle(0x9a7b4f).fillRect(4,29,8,2).fillRect(12,29,8,2);
@@ -1409,7 +1411,7 @@
       this.save.healingDraughts = 3;
       this.save.smokeBombs = 1;
       this.save.inventory = [];
-      this.save.equipment = { weapon:null, armor:null, trinket:null };
+      this.save.equipment = { weapon:null, armor:null, boots:null, shield:null, trinket:null, cloak:null };
       this.save.collectedLoot = [];
       this.save.chestPositions = {};
       this.save.lootSeed = ((Date.now()>>>0)^Math.floor(Math.random()*0xffffffff)).toString(36);
@@ -2212,7 +2214,27 @@
       if (typeof this.save.manaPotions !== "number") this.save.manaPotions = 0;
       if (!Array.isArray(this.save.inventory)) this.save.inventory=[];
       if (!Array.isArray(this.save.collectedLoot)) this.save.collectedLoot=[];
-      if (!this.save.equipment) this.save.equipment={weapon:null,armor:null,trinket:null};
+      let equipmentChanged=false;
+      if (!this.save.equipment) {
+        this.save.equipment={weapon:null,armor:null,boots:null,shield:null,trinket:null,cloak:null};
+        equipmentChanged=true;
+      }
+      const equipment=this.save.equipment;
+      for(const slot of ["weapon","armor","boots","shield","trinket","cloak"]) {
+        if(!(slot in equipment)) { equipment[slot]=null; equipmentChanged=true; }
+      }
+      const armorMigrations={marsh_boots:"boots",greywatch_buckler:"shield",captain_mantle:"cloak"};
+      if(armorMigrations[equipment.armor]) {
+        equipment[armorMigrations[equipment.armor]]=equipment.armor;
+        equipment.armor=null;
+        equipmentChanged=true;
+      }
+      if(equipment.trinket==="hawk_quiver") {
+        equipment.cloak=equipment.trinket;
+        equipment.trinket=null;
+        equipmentChanged=true;
+      }
+      if(equipmentChanged) saveGame(this.save);
       if (!this.save.chestPositions || Array.isArray(this.save.chestPositions)) this.save.chestPositions={};
       if (!this.save.lootSeed) this.save.lootSeed=((Date.now()>>>0)^Math.floor(Math.random()*0xffffffff)).toString(36);
       if (typeof this.save.gold !== "number") this.save.gold=0;
