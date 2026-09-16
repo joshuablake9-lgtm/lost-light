@@ -83,6 +83,23 @@
     violet_spellshard: { name:"Violet Spellshard", slot:"trinket", className:"Wizard", mp:2, magic:1, unique:true, description:"Wizard only. +2 maximum MP and +1 Magic Missile damage." }
   };
 
+  const VALUABLES = {
+    amber_bead: { name:"Amber Trade Bead", value:8, description:"Warm coastal amber, useful to merchants and collectors." },
+    silver_clasp: { name:"Silver Cloak Clasp", value:14, description:"A chased silver clasp taken from an Ashfang supply pouch." },
+    moonstone_chip: { name:"Moonstone Chip", value:22, description:"A pale blue gemstone fragment that glows softly at dusk." },
+    old_relic: { name:"Greywatch Relic", value:35, description:"A small pre-ruin keepsake bearing Greywatch's faded crest." }
+  };
+
+  const RANDOM_LOOT_TABLE = [
+    { max:35, type:"gold", name:"coins", min:4, maxAmount:12 },
+    { max:50, type:"healing", name:"healing draught" },
+    { max:58, type:"smoke", name:"smoke bomb" },
+    { max:72, type:"valuable", id:"amber_bead" },
+    { max:84, type:"valuable", id:"silver_clasp" },
+    { max:93, type:"valuable", id:"moonstone_chip" },
+    { max:100, type:"valuable", id:"old_relic" }
+  ];
+
   function migrateLegacySave() {
     try {
       const legacy = localStorage.getItem(LEGACY_SAVE_KEY);
@@ -120,6 +137,7 @@
       this.inventoryUi = [];
       this.inventoryIndex = 0;
       this.inventoryScroll = 0;
+      this.inventoryTab = 0;
       this.area = "";
       this.objective = "";
       this.playerHp = 0;
@@ -451,7 +469,7 @@
         fontSize: (size * renderScale) + "px",
         fontStyle: "bold",
         color,
-        resolution: 2,
+        resolution: 4,
         lineSpacing: 1
       }).setOrigin(origin).setDepth(20).setScrollFactor(0);
     }
@@ -1438,56 +1456,99 @@
       this.updateHud();
     }
 
+    getInventoryEntries() {
+      this.ensureInventory();
+      if(this.inventoryTab===0) return [
+        {kind:"healing",name:"Healing Draught",count:this.save.healingDraughts,description:"Restores 8 HP plus healing bonuses. Press Z to drink."},
+        {kind:"smoke",name:"Smoke Bomb",count:this.save.smokeBombs,description:"Allows a safe escape from most battles. Used from the battle Item menu."},
+        {kind:"gold",name:"Gold Coins",count:this.save.gold,description:"Currency gathered from enemies and forgotten caches."}
+      ];
+      if(this.inventoryTab===1) return this.save.inventory.map(id=>({kind:"gear",id,item:ITEMS[id]}));
+      return Object.entries(this.save.valuables)
+        .filter(([,count])=>count>0)
+        .map(([id,count])=>({kind:"valuable",id,count,item:VALUABLES[id]}));
+    }
+
     renderInventoryMenu(message="") {
+      this.ensureInventory();
       this.inventoryUi.forEach(x=>x&&x.destroy());
       this.inventoryUi=[];
       const panel=this.add.graphics().setDepth(100).setScrollFactor(0);
-      panel.fillStyle(0x101827,0.98).fillRect(8,10,464,412);
-      panel.lineStyle(5,COLORS.cream).strokeRect(8,10,464,412);
-      panel.lineStyle(2,COLORS.gold).strokeRect(15,17,450,398);
-      panel.fillStyle(0x26334d).fillRect(20,52,440,44);
-      panel.fillStyle(0x182847).fillRect(20,326,440,78);
+      panel.fillStyle(0x101827,0.99).fillRect(8,8,464,416);
+      panel.lineStyle(5,COLORS.cream).strokeRect(8,8,464,416);
+      panel.lineStyle(2,COLORS.gold).strokeRect(15,15,450,402);
+      panel.fillStyle(0x26334d).fillRect(20,55,440,42);
+      panel.fillStyle(0x182847).fillRect(20,326,440,80);
       this.inventoryUi.push(panel);
 
-      const style=(size,color="#fff7d6")=>({fontFamily:"Silkscreen, monospace",fontSize:size+"px",color});
-      const title=this.add.text(25,24,"INVENTORY",style(22,"#ffd166")).setDepth(101).setScrollFactor(0);
-      const eq=this.save.equipment;
-      const short=id=>id&&ITEMS[id]?ITEMS[id].name:"—";
-      const equipped=this.add.text(29,60,
-        "WEAPON: "+short(eq.weapon)+"\nARMOR:  "+short(eq.armor)+"\nTRINKET:"+short(eq.trinket),
-        style(11,"#b7d1b0")).setDepth(101).setScrollFactor(0);
-      this.inventoryUi.push(title,equipped);
+      const style=(size,color="#fff7d6")=>({
+        fontFamily:"Silkscreen, monospace",fontSize:size+"px",fontStyle:"bold",color,resolution:4
+      });
+      const title=this.add.text(25,21,"INVENTORY",style(22,"#ffd166")).setDepth(101).setScrollFactor(0);
+      this.inventoryUi.push(title);
 
-      const inventory=this.save.inventory;
-      if(!inventory.length) {
-        const empty=this.add.text(30,125,"Your pack contains no equipment.",style(15,"#89a39a")).setDepth(101).setScrollFactor(0);
+      const tabs=["SUPPLIES","EQUIPMENT","VALUABLES"];
+      tabs.forEach((tab,index)=>{
+        const selected=index===this.inventoryTab;
+        const x=[31,166,326][index];
+        const label=this.add.text(x,67,(selected?"▶ ":"")+tab,style(12,selected?"#ffd166":"#89a39a"))
+          .setDepth(101).setScrollFactor(0);
+        this.inventoryUi.push(label);
+      });
+
+      const entries=this.getInventoryEntries();
+      if(this.inventoryIndex>=entries.length) this.inventoryIndex=Math.max(0,entries.length-1);
+      const visible=7;
+      if(this.inventoryIndex<this.inventoryScroll) this.inventoryScroll=this.inventoryIndex;
+      if(this.inventoryIndex>=this.inventoryScroll+visible) this.inventoryScroll=this.inventoryIndex-visible+1;
+      if(!entries.length) {
+        const empty=this.add.text(30,125,
+          this.inventoryTab===1?"No equipment collected.":"No valuables collected.",
+          style(15,"#89a39a")).setDepth(101).setScrollFactor(0);
         this.inventoryUi.push(empty);
       } else {
-        const visible=7;
-        if(this.inventoryIndex<this.inventoryScroll) this.inventoryScroll=this.inventoryIndex;
-        if(this.inventoryIndex>=this.inventoryScroll+visible) this.inventoryScroll=this.inventoryIndex-visible+1;
-        inventory.slice(this.inventoryScroll,this.inventoryScroll+visible).forEach((id,row)=>{
-          const item=ITEMS[id],index=this.inventoryScroll+row;
+        entries.slice(this.inventoryScroll,this.inventoryScroll+visible).forEach((entry,row)=>{
+          const index=this.inventoryScroll+row;
           const selected=index===this.inventoryIndex;
-          const worn=this.save.equipment[item.slot]===id;
-          const restricted=item.className&&item.className!==this.save.className;
-          const label=(selected?"▶ ":"  ")+(worn?"[E] ":"")+item.name+(item.unique?" ★":"");
-          const line=this.add.text(30,110+row*29,label,style(14,
-            restricted?"#6f7280":(selected?"#ffd166":"#fff7d6")
-          )).setDepth(101).setScrollFactor(0);
+          let label="";
+          let color=selected?"#ffd166":"#fff7d6";
+          if(entry.kind==="gear") {
+            const worn=this.save.equipment[entry.item.slot]===entry.id;
+            const restricted=entry.item.className&&entry.item.className!==this.save.className;
+            label=(worn?"[E] ":"")+entry.item.name+"  · "+entry.item.slot.toUpperCase();
+            if(restricted) color="#6f7280";
+          } else {
+            label=entry.name+"  ×"+entry.count;
+          }
+          const line=this.add.text(31,109+row*28,(selected?"▶ ":"  ")+label,style(13,color))
+            .setDepth(101).setScrollFactor(0);
           this.inventoryUi.push(line);
         });
-        const item=ITEMS[inventory[this.inventoryIndex]];
-        const stats=[
-          item.damage?"+ "+item.damage+" DAMAGE":"",
-          item.armor?"+ "+item.armor+" ARMOR":"",
-          item.hp?"+ "+item.hp+" HP":"",
-          item.mp?"+ "+item.mp+" MP":"",
-          item.healing?"+ "+item.healing+" HEALING":"",
-          item.magic?"+ "+item.magic+" SPELL DAMAGE":""
-        ].filter(Boolean).join("  ·  ");
-        const detail=this.add.text(29,338,
-          (message||item.description)+"\n"+stats+"\nZ: EQUIP   X/I: CLOSE",
+
+        const entry=entries[this.inventoryIndex];
+        let description="",stats="",controls="← → TABS   X/I: CLOSE";
+        if(entry.kind==="gear") {
+          const item=entry.item;
+          description=item.description;
+          stats=[
+            item.damage?"+"+item.damage+" DAMAGE":"",
+            item.armor?"+"+item.armor+" ARMOR":"",
+            item.hp?"+"+item.hp+" HP":"",
+            item.mp?"+"+item.mp+" MP":"",
+            item.healing?"+"+item.healing+" HEALING":"",
+            item.magic?"+"+item.magic+" MAGIC":""
+          ].filter(Boolean).join("  ·  ");
+          controls="Z: EQUIP/REMOVE   ← → TABS   X/I: CLOSE";
+        } else if(entry.kind==="valuable") {
+          description=entry.item.description;
+          stats="VALUE: "+entry.item.value+" GOLD EACH  ·  TOTAL: "+(entry.item.value*entry.count);
+        } else {
+          description=entry.description;
+          stats=entry.kind==="gold"?"CURRENT FUNDS: "+entry.count+" GOLD":"";
+          if(entry.kind==="healing") controls="Z: USE   ← → TABS   X/I: CLOSE";
+        }
+        const detail=this.add.text(29,337,
+          (message||description)+(stats?"\n"+stats:"")+"\n"+controls,
           style(11,message?"#ffb09f":"#b7d1b0")).setDepth(101).setScrollFactor(0);
         detail.setWordWrapWidth(420);
         this.inventoryUi.push(detail);
@@ -1495,14 +1556,42 @@
     }
 
     moveInventoryCursor(direction) {
-      if(!this.save.inventory.length) return;
-      this.inventoryIndex=(this.inventoryIndex+direction+this.save.inventory.length)%this.save.inventory.length;
+      const entries=this.getInventoryEntries();
+      if(!entries.length) return;
+      this.inventoryIndex=(this.inventoryIndex+direction+entries.length)%entries.length;
       this.renderInventoryMenu();
     }
 
-    toggleEquipment() {
+    moveInventoryTab(direction) {
+      this.inventoryTab=(this.inventoryTab+direction+3)%3;
+      this.inventoryIndex=0;
+      this.inventoryScroll=0;
+      this.renderInventoryMenu();
+    }
+
+    activateInventoryItem() {
+      const entries=this.getInventoryEntries();
+      if(!entries.length) return;
+      const entry=entries[this.inventoryIndex];
+      if(entry.kind==="gear") {
+        this.toggleEquipment(entry.id);
+        return;
+      }
+      if(entry.kind==="healing") {
+        if(this.save.healingDraughts<=0) return this.renderInventoryMenu("You have no healing draughts.");
+        if(this.playerHp>=this.playerMaxHp) return this.renderInventoryMenu("You are already at full health.");
+        this.save.healingDraughts--;
+        this.playerHp=Math.min(this.playerMaxHp,this.playerHp+8+(this.getClassStats().healing||0));
+        this.save.playerHp=this.playerHp;
+        saveGame(this.save);
+        this.renderInventoryMenu("You drink a healing draught and restore HP.");
+      }
+    }
+
+    toggleEquipment(id=null) {
       if(!this.save.inventory.length) return;
-      const id=this.save.inventory[this.inventoryIndex],item=ITEMS[id];
+      id=id || this.save.inventory[this.inventoryIndex];
+      const item=ITEMS[id];
       if(item.className && item.className!==this.save.className) {
         this.renderInventoryMenu("Only a "+item.className+" can equip "+item.name+".");
         return;
@@ -1703,8 +1792,46 @@
       });
     }
 
+    rollEnemyDamage(enemy) {
+      return enemy.type === "goblin" ? Phaser.Math.Between(1,4) : enemy.damage;
+    }
+
+    rollRandomLoot(enemy) {
+      this.ensureInventory();
+      const roll=Phaser.Math.Between(1,100);
+      const drop=RANDOM_LOOT_TABLE.find(entry=>roll<=entry.max) || RANDOM_LOOT_TABLE[0];
+      let message="";
+      if(drop.type==="gold") {
+        const bonus=enemy.id==="varkul" ? 15 : 0;
+        const amount=Phaser.Math.Between(drop.min,drop.maxAmount)+bonus;
+        this.save.gold+=amount;
+        message="LOOT: "+amount+" GOLD";
+      } else if(drop.type==="healing") {
+        this.save.healingDraughts++;
+        message="LOOT: HEALING DRAUGHT";
+      } else if(drop.type==="smoke") {
+        this.save.smokeBombs++;
+        message="LOOT: SMOKE BOMB";
+      } else {
+        this.save.valuables[drop.id]=(this.save.valuables[drop.id]||0)+1;
+        message="LOOT: "+VALUABLES[drop.id].name.toUpperCase();
+      }
+      saveGame(this.save);
+      this.showLootToast(message);
+      return message;
+    }
+
+    showLootToast(message) {
+      const toast=this.add.text(WIDTH/2,104,message,{
+        fontFamily:"Silkscreen, monospace",fontSize:"14px",fontStyle:"bold",
+        color:"#ffd166",backgroundColor:"#182847",padding:{x:9,y:5},resolution:4
+      }).setOrigin(0.5).setDepth(98).setScrollFactor(0);
+      this.tweens.add({targets:toast,y:88,alpha:0,duration:1100,delay:650,onComplete:()=>toast.destroy()});
+    }
+
     removeDefeatedEnemy(enemy) {
       this.gainExperience(enemy);
+      this.rollRandomLoot(enemy);
       this.blocked.delete(enemy.x+","+enemy.y);
       enemy.sprite.destroy();
       this.enemies=this.enemies.filter(e=>e!==enemy);
@@ -1732,7 +1859,8 @@
       this.battleResolving=true;
       const enemy=this.battleTarget;
       if(!enemy || enemy.hp<=0) return;
-      let dealt=Math.max(1,enemy.damage-this.getClassStats().armor);
+      const rolledDamage=this.rollEnemyDamage(enemy);
+      let dealt=Math.max(1,rolledDamage-this.getClassStats().armor);
       if(this.guarding) {
         dealt=Math.max(1,Math.floor(dealt/3));
         this.guarding=false;
@@ -1771,7 +1899,7 @@
       for (const enemy of this.enemies) {
         const distance = Math.abs(enemy.x - this.heroTile.x) + Math.abs(enemy.y - this.heroTile.y);
         if (distance === 1) {
-          totalDamage += enemy.damage;
+          totalDamage += this.rollEnemyDamage(enemy);
           this.tweens.add({ targets: enemy.sprite, scaleX: 2.35, scaleY: 2.35, duration: 55, yoyo: true });
           continue;
         }
@@ -1836,6 +1964,8 @@
       if (!Array.isArray(this.save.inventory)) this.save.inventory=[];
       if (!Array.isArray(this.save.collectedLoot)) this.save.collectedLoot=[];
       if (!this.save.equipment) this.save.equipment={weapon:null,armor:null,trinket:null};
+      if (typeof this.save.gold !== "number") this.save.gold=0;
+      if (!this.save.valuables || Array.isArray(this.save.valuables)) this.save.valuables={};
     }
 
     openBattleMenu(enemy) {
@@ -1935,7 +2065,7 @@
       this.battleUi.push(enemySprite,heroSprite);
 
       const style=(size,color="#fff7d6")=>({
-        fontFamily:"Silkscreen, monospace",fontSize:size+"px",color
+        fontFamily:"Silkscreen, monospace",fontSize:size+"px",fontStyle:"bold",color,resolution:4
       });
       const foeName=this.add.text(31,34,enemy.name.toUpperCase(),style(15,"#ffd166"))
         .setDepth(83).setScrollFactor(0);
@@ -2544,7 +2674,7 @@
 
       this.createCombatHero();
       const roomLabel=this.add.text(18,18,(index+1)+"/10  "+room.name,{
-        fontFamily:"Silkscreen, monospace",fontSize:"14px",color:"#ffefc1",
+        fontFamily:"Silkscreen, monospace",fontSize:"14px",fontStyle:"bold",color:"#ffefc1",resolution:4,
         backgroundColor:"#182847",padding:{x:8,y:5}
       }).setDepth(72).setScrollFactor(0);
       if(!cleared) this.openDialogue([room.intro,index<9?"Defeat the guards, then take the northern passage.":"Defeat Varkul and end the Ashfang raid."]);
@@ -2662,7 +2792,9 @@
       if (this.mode === "inventory") {
         if (this.pressed(this.keys.up, this.keys.w)) this.moveInventoryCursor(-1);
         else if (this.pressed(this.keys.down, this.keys.s)) this.moveInventoryCursor(1);
-        else if (this.pressed(this.keys.z, this.keys.enter, this.keys.space)) this.toggleEquipment();
+        else if (this.pressed(this.keys.left, this.keys.a)) this.moveInventoryTab(-1);
+        else if (this.pressed(this.keys.right, this.keys.d)) this.moveInventoryTab(1);
+        else if (this.pressed(this.keys.z, this.keys.enter, this.keys.space)) this.activateInventoryItem();
         else if (this.pressed(this.keys.x, this.keys.esc, this.keys.i)) this.closeInventoryMenu();
         return;
       }
@@ -2701,7 +2833,7 @@
 
   document.fonts.ready.then(() => new Phaser.Game({
     type: Phaser.AUTO,
-    resolution: Math.min(Math.max(window.devicePixelRatio || 1, 1.5), 3),
+    resolution: Math.min(Math.max(window.devicePixelRatio || 1, 2), 4),
     antialias: false,
     antialiasGL: false,
     powerPreference: "high-performance",
