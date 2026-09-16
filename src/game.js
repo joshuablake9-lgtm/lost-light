@@ -2124,8 +2124,12 @@
       this.battleResolving=true;
       const enemy=this.battleTarget;
       if(!enemy || enemy.hp<=0) return;
-      const rolledDamage=this.rollEnemyDamage(enemy);
-      let dealt=Math.max(1,rolledDamage-this.getClassStats().armor);
+      enemy.battleTurns=(enemy.battleTurns||0)+1;
+      const ashfangCleave=enemy.id==="varkul"&&enemy.battleTurns%3===0;
+      const rolledDamage=ashfangCleave?Phaser.Math.Between(6,9):this.rollEnemyDamage(enemy);
+      const armor=this.getClassStats().armor;
+      const effectiveArmor=ashfangCleave?Math.floor(armor/2):armor;
+      let dealt=Math.max(1,rolledDamage-effectiveArmor);
       if(this.guarding) {
         dealt=Math.max(1,Math.floor(dealt/3));
         this.guarding=false;
@@ -2133,10 +2137,22 @@
       this.playerHp-=dealt;
       this.save.playerHp=this.playerHp;
       saveGame(this.save);
-      this.cameras.main.flash(75,120,20,20);
-      this.tweens.add({targets:this.battleEnemySprite,x:326,duration:90,yoyo:true});
+      if(ashfangCleave) {
+        this.cameras.main.flash(130,175,35,25);
+        this.cameras.main.shake(180,0.014);
+      } else {
+        this.cameras.main.flash(75,120,20,20);
+      }
       this.tweens.add({
-        targets:this.battleHeroSprite,alpha:0.25,duration:85,yoyo:true,
+        targets:this.battleEnemySprite,
+        x:ashfangCleave?302:326,
+        scaleX:ashfangCleave?5.45:4.8,
+        scaleY:ashfangCleave?5.45:4.8,
+        duration:ashfangCleave?140:90,
+        yoyo:true
+      });
+      this.tweens.add({
+        targets:this.battleHeroSprite,alpha:0.25,duration:ashfangCleave?135:85,yoyo:true,
         onComplete:()=>{
           if(this.playerHp<=0) {
             this.playerHp=0;
@@ -2153,7 +2169,13 @@
           this.battleMenu="main";
           this.battleIndex=0;
           this.updateHud();
-          this.renderBattleMenu((playerMessage?playerMessage+"  ":"")+enemy.name+" deals "+dealt+" damage.");
+          const action=ashfangCleave
+            ? "VARKUL USES ASHFANG CLEAVE! "+dealt+" DAMAGE. HALF ARMOR."
+            : enemy.name+" deals "+dealt+" damage.";
+          const warning=enemy.id==="varkul"&&enemy.battleTurns%3===2
+            ? "  Varkul raises his axe—Ashfang Cleave is next!"
+            : "";
+          this.renderBattleMenu((playerMessage?playerMessage+"  ":"")+action+warning);
         }
       });
     }
