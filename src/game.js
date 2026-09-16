@@ -141,6 +141,9 @@
       this.shopUi = [];
       this.shopTab = 0;
       this.shopIndex = 0;
+      this.heroGearVisuals = [];
+      this.heroGearSignature = "";
+      this.heroGearOwner = null;
       this.area = "";
       this.objective = "";
       this.playerHp = 0;
@@ -461,7 +464,109 @@
       this.enemies = [];
       this.loot = [];
       this.inventoryUi = [];
+      this.shopUi = [];
+      this.heroGearVisuals = [];
+      this.heroGearSignature = "";
+      this.heroGearOwner = null;
       this.hudText = null;
+    }
+
+    drawEquippedGear(back, front) {
+      this.ensureInventory();
+      const eq=this.save.equipment || {};
+      const weapon=eq.weapon;
+      const armor=eq.armor;
+      const trinket=eq.trinket;
+
+      // Back layers: mantles, quivers and larger class relics.
+      if(armor==="captain_mantle") {
+        back.fillStyle(0x7d3541,0.95).fillTriangle(-18,-12,18,-12,0,29);
+        back.fillStyle(0xe6b85c).fillRect(-13,-12,26,4);
+      }
+      if(trinket==="hawk_quiver") {
+        back.fillStyle(0x5b3b2f).fillRect(-21,-19,8,34);
+        back.fillStyle(0xe6d59a).fillTriangle(-22,-22,-17,-31,-12,-22);
+        back.fillTriangle(-17,-22,-12,-31,-7,-22);
+      }
+
+      // Armor changes the readable silhouette.
+      if(armor==="greywatch_buckler") {
+        front.fillStyle(0x26334d).fillCircle(-19,-1,12);
+        front.fillStyle(0xa9b8b0).fillCircle(-19,-1,9);
+        front.fillStyle(0xe6b85c).fillCircle(-19,-1,3);
+      } else if(armor==="quilted_jack") {
+        front.fillStyle(0x9b704d,0.95).fillRect(-13,-12,26,23);
+        front.lineStyle(2,0xd0a86b).lineBetween(-12,-5,12,-5);
+        front.lineBetween(-12,2,12,2);
+      } else if(armor==="marsh_boots") {
+        front.fillStyle(0x405642).fillRect(-14,16,11,9).fillRect(3,16,11,9);
+        front.fillStyle(0x9a7b4f).fillRect(-15,22,13,4).fillRect(2,22,13,4);
+      }
+
+      // Equipped weapons are visible at the hero's right side.
+      if(weapon) {
+        if(weapon==="nightglass_dirk") {
+          front.fillStyle(0x4a315f).fillTriangle(16,-4,27,-17,21,2);
+          front.fillStyle(0xd9c3f0).fillRect(17,0,10,3);
+        } else if(weapon==="tempered_hatchet") {
+          front.fillStyle(0x6e4934).fillRect(19,-12,4,30);
+          front.fillStyle(0xb8c0b8).fillRect(15,-16,14,10);
+          front.fillStyle(0x626c70).fillTriangle(29,-16,36,-10,29,-6);
+        } else {
+          front.fillStyle(0xd7ded2).fillTriangle(19,-22,25,-22,22,10);
+          front.fillStyle(0x7c5a3d).fillRect(19,8,6,15);
+          front.fillStyle(0xe6b85c).fillRect(14,7,16,4);
+        }
+      }
+
+      // Trinkets provide a distinct colored accent.
+      const trinketColors={
+        saint_token:0xe8e1c7,jailer_ring:0xa9b8b0,hearth_charm:0xe87545,
+        scribe_lens:0x65b9c7,dawn_reliquary:0xffd166,violet_spellshard:0xbda7ff
+      };
+      if(trinketColors[trinket]) {
+        front.fillStyle(trinketColors[trinket],0.45).fillCircle(0,-3,10);
+        front.fillStyle(trinketColors[trinket]).fillCircle(0,-3,5);
+        front.fillStyle(0xffefc1).fillRect(-1,-6,2,6);
+      }
+    }
+
+    syncHeroEquipmentVisuals() {
+      if(!this.hero || this.mode!=="world") return;
+      const eq=this.save.equipment || {};
+      const signature=[eq.weapon||"",eq.armor||"",eq.trinket||""].join("|");
+      const active=this.heroGearVisuals.length&&this.heroGearVisuals.every(x=>x&&x.active);
+      if(this.heroGearOwner!==this.hero || this.heroGearSignature!==signature || !active) {
+        this.heroGearVisuals.forEach(x=>x&&x.destroy());
+        const back=this.add.graphics().setDepth((this.hero.depth||10)-1);
+        const front=this.add.graphics().setDepth((this.hero.depth||10)+1);
+        this.drawEquippedGear(back,front);
+        this.heroGearVisuals=[back,front];
+        this.heroGearOwner=this.hero;
+        this.heroGearSignature=signature;
+      }
+      const mirror=this.hero.flipX?-1:1;
+      this.heroGearVisuals.forEach(layer=>{
+        layer.setPosition(this.hero.x,this.hero.y);
+        layer.setScale(mirror,1);
+      });
+    }
+
+    addBattleEquipmentVisuals() {
+      const back=this.add.graphics().setDepth(81).setScrollFactor(0);
+      const front=this.add.graphics().setDepth(84).setScrollFactor(0);
+      this.drawEquippedGear(back,front);
+      back.setPosition(112,236).setScale(2.35);
+      front.setPosition(112,236).setScale(2.35);
+      this.battleUi.push(back,front);
+    }
+
+    checkEnemyEngagement() {
+      if(this.mode!=="world"||this.busy||this.dialogue||!this.enemies||!this.enemies.length) return false;
+      const enemy=this.enemies.find(e=>Math.abs(e.x-this.heroTile.x)+Math.abs(e.y-this.heroTile.y)<=1);
+      if(!enemy) return false;
+      this.openBattleMenu(enemy);
+      return true;
     }
 
     text(x, y, value, size = 7, color = "#ffefc1", origin = 0) {
@@ -1625,6 +1730,7 @@
       this.save.playerHp=this.playerHp;
       this.save.playerMp=this.playerMp;
       saveGame(this.save);
+      this.heroGearSignature="";
       this.renderInventoryMenu();
     }
 
@@ -2055,16 +2161,19 @@
           if(!this.blocked.has(key)) {
             this.blocked.delete(enemy.x+","+enemy.y);
             enemy.x=nx;enemy.y=ny;this.blocked.add(key);
-            this.tweens.add({targets:enemy.sprite,x:nx*TILE+24,y:ny*TILE+12,duration:100});
             distance=Math.abs(nx-this.heroTile.x)+Math.abs(ny-this.heroTile.y);
             if(distance===1) {
               this.busy=true;
-              this.time.delayedCall(110,()=>{
-                if(this.mode==="world"&&this.enemies.includes(enemy)) this.openBattleMenu(enemy);
-                else this.busy=false;
+              this.tweens.add({
+                targets:enemy.sprite,x:nx*TILE+24,y:ny*TILE+12,duration:100,
+                onComplete:()=>{
+                  this.busy=false;
+                  if(this.mode==="world"&&this.enemies.includes(enemy)) this.openBattleMenu(enemy);
+                }
               });
               return;
             }
+            this.tweens.add({targets:enemy.sprite,x:nx*TILE+24,y:ny*TILE+12,duration:100});
             break;
           }
         }
@@ -2187,6 +2296,7 @@
       this.battleEnemySprite=enemySprite;
       this.battleHeroSprite=heroSprite;
       this.battleUi.push(enemySprite,heroSprite);
+      this.addBattleEquipmentVisuals();
 
       const style=(size,color="#fff7d6")=>({
         fontFamily:"Silkscreen, monospace",fontSize:size+"px",fontStyle:"bold",color,resolution:4
@@ -2972,6 +3082,8 @@
       }
 
       if (this.mode !== "world") return;
+      this.syncHeroEquipmentVisuals();
+      if (this.checkEnemyEngagement()) return;
       if (this.pressed(this.keys.i)) {
         this.openInventoryMenu();
         return;
