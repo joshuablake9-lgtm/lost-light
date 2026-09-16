@@ -1411,6 +1411,8 @@
       this.save.inventory = [];
       this.save.equipment = { weapon:null, armor:null, trinket:null };
       this.save.collectedLoot = [];
+      this.save.chestPositions = {};
+      this.save.lootSeed = ((Date.now()>>>0)^Math.floor(Math.random()*0xffffffff)).toString(36);
       saveGame(this.save);
       if (this.hero) {
         const direction=this.facing.y<0?"up":(this.facing.x!==0?"side":"down");
@@ -1519,6 +1521,37 @@
       const sprite=this.add.sprite(x*TILE+24,y*TILE+20,"treasure-chest").setDepth(13).setScale(2);
       this.loot.push({id:"loot-"+itemId,itemId,item,x,y,sprite});
       this.blocked.add(x+","+y);
+    }
+
+    getSeededChestPosition(itemId,roomIndex,reserved=[]) {
+      this.ensureInventory();
+      const reservedTiles=new Set(reserved.map(([x,y])=>x+","+y));
+      reservedTiles.add(this.heroTile.x+","+this.heroTile.y);
+      for(const x of [9,10]) {
+        reservedTiles.add(x+",0");
+        reservedTiles.add(x+",1");
+        reservedTiles.add(x+",13");
+        reservedTiles.add(x+",14");
+      }
+      const candidates=[];
+      for(let y=2;y<=12;y++) for(let x=2;x<=17;x++) {
+        const key=x+","+y;
+        if(!this.blocked.has(key)&&!reservedTiles.has(key)) candidates.push({x,y});
+      }
+      const saved=this.save.chestPositions[itemId];
+      if(saved&&saved.room===roomIndex&&candidates.some(p=>p.x===saved.x&&p.y===saved.y)) return saved;
+
+      let hash=2166136261;
+      const input=this.save.lootSeed+"|"+roomIndex+"|"+itemId;
+      for(let i=0;i<input.length;i++) {
+        hash^=input.charCodeAt(i);
+        hash=Math.imul(hash,16777619)>>>0;
+      }
+      const position=candidates[hash%candidates.length] || {x:10,y:7};
+      const seeded={room:roomIndex,x:position.x,y:position.y};
+      this.save.chestPositions[itemId]=seeded;
+      saveGame(this.save);
+      return seeded;
     }
 
     collectLoot(chest) {
@@ -2180,6 +2213,8 @@
       if (!Array.isArray(this.save.inventory)) this.save.inventory=[];
       if (!Array.isArray(this.save.collectedLoot)) this.save.collectedLoot=[];
       if (!this.save.equipment) this.save.equipment={weapon:null,armor:null,trinket:null};
+      if (!this.save.chestPositions || Array.isArray(this.save.chestPositions)) this.save.chestPositions={};
+      if (!this.save.lootSeed) this.save.lootSeed=((Date.now()>>>0)^Math.floor(Math.random()*0xffffffff)).toString(36);
       if (typeof this.save.gold !== "number") this.save.gold=0;
       if (!this.save.valuables || Array.isArray(this.save.valuables)) this.save.valuables={};
     }
@@ -2876,10 +2911,28 @@
         g.lineStyle(5,0xe6b85c).strokeRect(6*T+14,9*T+6,8*T-28,2*T-12);
       }
 
-      // Treasure is persistent and distributed across Greywatch.
+      // Persistent per-save encounters also reserve their tiles from randomized chests.
+      const encounters=[
+        [["goblin",6,7,8,2],["goblin",13,7,8,2]],
+        [["goblin",7,5,9,2],["goblin",12,10,9,2]],
+        [["orc",10,6,14,3]],
+        [["goblin",8,6,10,2],["goblin",11,9,10,2]],
+        [["orc",10,6,15,3],["goblin",10,10,10,2]],
+        [["orc",7,7,16,3],["orc",13,7,16,3]],
+        [["goblin",7,5,11,2],["goblin",13,10,11,2]],
+        [["orc",10,5,17,3],["goblin",10,10,12,2]],
+        [["orc",7,11,18,4],["orc",13,11,18,4]],
+        [["orc",6,8,18,4],["orc",14,8,18,4],["hobgoblin",10,4,30,5]]
+      ][index];
+      const reservedEnemyTiles=encounters.map(([,x,y])=>[x,y]);
+
+      // Every save receives deterministic randomized chest locations.
       const genericLoot=["watch_blade","quilted_jack","saint_token","marsh_boots","jailer_ring","tempered_hatchet","hearth_charm","scribe_lens","captain_mantle",null];
       const genericItem=genericLoot[index];
-      if(genericItem) this.spawnLoot(genericItem,10,11);
+      if(genericItem) {
+        const pos=this.getSeededChestPosition(genericItem,index,reservedEnemyTiles);
+        this.spawnLoot(genericItem,pos.x,pos.y);
+      }
       const classTreasures={
         Fighter:{room:1,id:"greywatch_buckler"},
         Ranger:{room:3,id:"hawk_quiver"},
@@ -2888,22 +2941,13 @@
         Wizard:{room:7,id:"violet_spellshard"}
       };
       const classTreasure=classTreasures[this.save.className];
-      if(classTreasure && classTreasure.room===index) this.spawnLoot(classTreasure.id,10,2);
+      if(classTreasure&&classTreasure.room===index) {
+        const pos=this.getSeededChestPosition(classTreasure.id,index,reservedEnemyTiles);
+        this.spawnLoot(classTreasure.id,pos.x,pos.y);
+      }
 
       const cleared=this.save.clearedRooms.includes(index);
       if(!cleared) {
-        const encounters=[
-          [["goblin",6,7,8,2],["goblin",13,7,8,2]],
-          [["goblin",7,5,9,2],["goblin",12,10,9,2]],
-          [["orc",10,6,14,3]],
-          [["goblin",8,6,10,2],["goblin",11,9,10,2]],
-          [["orc",10,6,15,3],["goblin",10,10,10,2]],
-          [["orc",7,7,16,3],["orc",13,7,16,3]],
-          [["goblin",7,5,11,2],["goblin",13,10,11,2]],
-          [["orc",10,5,17,3],["goblin",10,10,12,2]],
-          [["orc",7,11,18,4],["orc",13,11,18,4]],
-          [["orc",6,8,18,4],["orc",14,8,18,4],["hobgoblin",10,4,30,5]]
-        ][index];
         encounters.forEach(([type,x,y,hp,damage],i)=>{
           const id=index===9&&type==="hobgoblin"?"varkul":"room-"+index+"-"+i;
           const name=id==="varkul"?"Commander Varkul":(type==="orc"?"Ashfang Reaver":"Ashfang Goblin");
