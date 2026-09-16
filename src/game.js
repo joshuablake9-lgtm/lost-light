@@ -697,12 +697,14 @@
       this.blocked = new Set();
       const g = this.add.graphics();
       const T = TILE;
+      const VW = 30;
+      const VH = 22;
       const block = (x,y,w=1,h=1) => {
         for(let yy=y;yy<y+h;yy++) for(let xx=x;xx<x+w;xx++) this.blocked.add(xx+","+yy);
       };
 
       // Layered grass with small deterministic details.
-      for(let y=0;y<15;y++) for(let x=0;x<20;x++) {
+      for(let y=0;y<VH;y++) for(let x=0;x<VW;x++) {
         const px=x*T,py=y*T;
         g.fillStyle((x+y)%3===0?0x709c60:((x+y)%2?0x659254:0x78a566)).fillRect(px,py,T,T);
         g.fillStyle(0x4d7a49,0.65).fillRect(px+7,py+13,13,3).fillRect(px+31,py+34,9,3);
@@ -713,8 +715,8 @@
       }
 
       // Fine ground texture: grass blades, clover, stones and tiny wildflowers.
-      for (let y = 0; y < 15; y++) {
-        for (let x = 5; x < 20; x++) {
+      for (let y = 0; y < VH; y++) {
+        for (let x = 5; x < VW; x++) {
           const px = x * T, py = y * T;
           const seed = (x * 37 + y * 61) % 17;
           g.fillStyle(seed % 2 ? 0x436f45 : 0x86b66d, 0.85);
@@ -733,7 +735,7 @@
       }
 
       // Sea, surf, cliffs and dock.
-      for(let y=0;y<15;y++) {
+      for(let y=0;y<VH;y++) {
         for(let x=0;x<4;x++) {
           const water = (x + y) % 3 === 0 ? 0x245d78 : ((x + y) % 2 ? 0x347f94 : 0x2b7089);
           g.fillStyle(water).fillRect(x*T,y*T,T,T);
@@ -757,21 +759,39 @@
       }
 
       // Roads and village square: worn earth, ruts, stones and grassy edges.
-      for(let y=0;y<15;y++) for(const x of [8,9,10]) {
+      for(let y=0;y<VH;y++) for(const x of [8,9,10]) {
         g.fillStyle((x+y)%2?0xb99b6b:0xc8aa78).fillRect(x*T,y*T,T,T);
         g.fillStyle(0x8a704f,0.65).fillRect(x*T+7,y*T,T-14,3);
         g.fillStyle(0xddc18a,0.7).fillRect(x*T+12,y*T+11,T-24,2);
         g.fillStyle(0x756650).fillEllipse(x*T+15,y*T+19,8,5);
         g.fillStyle(0x9b865f).fillEllipse(x*T+37,y*T+36,11,6);
       }
-      for (let y=0;y<15;y++) {
+      for (let y=0;y<VH;y++) {
         g.fillStyle(0x4f7d49,0.75).fillRect(8*T-5,y*T,5,T);
         g.fillStyle(0x4f7d49,0.75).fillRect(11*T,y*T,5,T);
       }
-      for(let y=6;y<10;y++) for(let x=5;x<19;x++) {
+      for(let y=6;y<10;y++) for(let x=5;x<VW-1;x++) {
         g.fillStyle((x+y)%2?0xc2a371:0xb49364).fillRect(x*T,y*T,T,T);
         g.fillStyle(0x856e52).fillEllipse(x*T+35,y*T+32,7,4);
       }
+
+      // Expanded Dunmere districts: south quay, trade road, shrine lane and east ward.
+      for(let y=16;y<19;y++) for(let x=5;x<VW-1;x++) {
+        g.fillStyle((x+y)%2?0xb99a6a:0xc6a878).fillRect(x*T,y*T,T,T);
+        g.fillStyle(0x806b50,0.65).fillEllipse(x*T+13,y*T+31,9,5);
+        g.fillStyle(0xd8bd88,0.65).fillRect(x*T+27,y*T+12,15,3);
+      }
+      for(let y=9;y<18;y++) for(const x of [24,25]) {
+        g.fillStyle((x+y)%2?0xb99b6b:0xc8aa78).fillRect(x*T,y*T,T,T);
+        g.fillStyle(0x8a704f,0.55).fillRect(x*T+8,y*T+21,T-16,3);
+      }
+      for(let x=1;x<7;x++) {
+        g.fillStyle(0x4d352f).fillRect(x*T,16*T+10,T,32);
+        g.fillStyle(0xa26e48).fillRect(x*T,16*T+10,T-3,7);
+        g.fillStyle(0x2a2930).fillRect(x*T+6,16*T+39,7,9);
+        this.blocked.delete(x+",16");
+      }
+
 
       const house=(x,y,w,h,wall,roof,doorX)=>{
         const px=x*T,py=y*T,pw=w*T,ph=h*T;
@@ -812,6 +832,65 @@
       house(14,1,5,4,0xc19a68,0x4f5d48,16);
       house(14,10,5,4,0x9f7655,0x4c4140,16);
       house(5,11,3,3,0xc5a36f,0x765245,6);
+      house(21,1,6,5,0xa97a54,0x4b4142,23);
+      house(23,11,5,4,0xc09a69,0x515e4c,25);
+      house(14,18,6,3,0xb7a06f,0x695066,17);
+      house(5,17,4,4,0xa87752,0x3f5960,7);
+
+      // Blacksmith yard: furnace, anvil, timber rack and coal.
+      block(20,7); block(21,7);
+      g.fillStyle(0x34313a).fillRect(20*T+5,7*T+8,T-10,T-8);
+      g.fillStyle(0x77766c).fillRect(20*T+10,7*T+3,T-20,13);
+      g.fillStyle(0xe1703e,0.5).fillCircle(20*T+24,7*T+30,18);
+      g.fillStyle(0xffc04d).fillRect(20*T+17,7*T+25,15,13);
+      g.fillStyle(0x30333b).fillRect(21*T+5,7*T+22,38,11);
+      g.fillStyle(0x666a6d).fillRect(21*T+13,7*T+11,22,18);
+      g.fillStyle(0x5b4032).fillRect(20*T+4,8*T+8,2*T-8,7);
+      [0,1,2,3].forEach(i=>g.fillStyle(0x8e6745).fillRect(20*T+10+i*19,8*T,8,27));
+
+      // Shrine garden and weathered lantern-stone.
+      block(19,15);
+      g.fillStyle(0x5b6061).fillRect(19*T+13,15*T+13,22,31);
+      g.fillStyle(0xa5a38f).fillRect(19*T+8,15*T+9,32,11);
+      g.fillStyle(0xd6c97f).fillCircle(19*T+24,15*T+8,8);
+      for(let x=14;x<21;x++) {
+        g.fillStyle(0x365c3f).fillRect(x*T+5,17*T-8,T-10,7);
+        g.fillStyle(x%2?0xd995a2:0xe7c65e).fillCircle(x*T+13,17*T-12,5);
+        g.fillStyle(0xf1e6bd).fillCircle(x*T+31,17*T-9,4);
+      }
+
+      // East farms, hedgerows and a small watch platform.
+      for(let y=17;y<21;y++) for(let x=22;x<28;x++) {
+        block(x,y);
+        g.fillStyle((x+y)%2?0x947445:0xa8854c).fillRect(x*T,y*T,T,T);
+        for(let stalk=0;stalk<3;stalk++) {
+          const sx=x*T+9+stalk*14;
+          g.fillStyle(0xd4aa50).fillRect(sx,y*T+8,4,34);
+          g.fillStyle(0xf1d274).fillRect(sx-4,y*T+9,12,4);
+        }
+      }
+      g.lineStyle(6,0x704536).strokeRect(22*T,17*T,6*T,4*T);
+      block(27,5);
+      g.fillStyle(0x573b31).fillRect(27*T+8,5*T+6,8,42).fillRect(27*T+32,5*T+6,8,42);
+      g.fillStyle(0x91613f).fillRect(27*T+3,5*T+6,T-6,13);
+      g.fillStyle(0x26334d).fillRect(27*T+10,5*T-2,T-20,8);
+
+      // Quayside nets, barrels, lobster pots and mooring posts.
+      [[1,15],[3,15],[6,15]].forEach(([x,y],i)=>{
+        g.fillStyle(0x47322e).fillEllipse(x*T+24,y*T+29,31,38);
+        g.fillStyle(0x9b6844).fillRect(x*T+11,y*T+15,26,25);
+        g.fillStyle(0x30313a).fillRect(x*T+9,y*T+20,30,4).fillRect(x*T+9,y*T+34,30,4);
+        if(i<2) block(x,y);
+      });
+      g.lineStyle(3,0xd6c79f,0.75).strokeCircle(7*T+24,15*T+26,19);
+      g.lineBetween(7*T+7,15*T+12,7*T+41,15*T+40);
+      g.lineBetween(7*T+41,15*T+12,7*T+7,15*T+40);
+
+      // District signposts.
+      [[11,15,"SHRINE"],[20,9,"SMITHY"],[26,10,"EAST"]].forEach(([x,y])=>{
+        g.fillStyle(0x50352f).fillRect(x*T+21,y*T+12,7,36);
+        g.fillStyle(0x9c6b45).fillRect(x*T+4,y*T+8,T-8,17);
+      });
 
       // Village dressing: cart, cargo, lamps, shrubs and a fishing skiff.
       g.fillStyle(0x47332f).fillRect(5*T+8,8*T+13,2*T-12,24);
@@ -906,8 +985,8 @@
         g.fillStyle(0x78aa62).fillCircle(x*T+18,y*T+9,13);
       });
 
-      for(let x=0;x<20;x++){block(x,0);block(x,14);}
-      for(let y=0;y<15;y++) block(19,y);
+      for(let x=0;x<VW;x++){block(x,0);block(x,VH-1);}
+      for(let y=0;y<VH;y++) block(VW-1,y);
       this.blocked.delete("9,4");
 
       this.text(80,4,"DUNMERE · LANTERN COAST",6,"#ffefc1",0.5);
@@ -918,13 +997,18 @@
       const villagers=[
         {id:"village-elin",x:7,y:7,texture:"villager-a-down",intro:["ELIN: Happy birthday!","Mara has half the village preparing your supper.","Stay near the square. Something has the gulls frightened."]},
         {id:"village-tomas",x:14,y:8,texture:"villager-b-down",intro:["TOMAS: The northern road is too quiet.","No caravans have arrived since yesterday.","Captain Brann should hear about it."]},
-        {id:"village-nell",x:8,y:10,texture:"villager-c-down",intro:["NELL: I found black-fletched arrows by the east field.","They weren't made in Dunmere.","Maybe goblins are ranging farther south."]}
+        {id:"village-nell",x:8,y:10,texture:"villager-c-down",intro:["NELL: I found black-fletched arrows by the east field.","They weren't made in Dunmere.","Maybe goblins are ranging farther south."]},
+        {id:"village-aric",x:22,y:7,texture:"villager-b-down",intro:["ARIC: The forge has not cooled since dawn.","Farmers want spearheads, not plowshares.","That tells you what fear is moving through Dunmere."]},
+        {id:"village-nessa",x:6,y:16,texture:"villager-a-down",intro:["NESSA: Three fishing boats came home before sunrise.","They saw torchlight moving along the northern cliffs.","Raiders do not usually carry that many banners."]},
+        {id:"village-pella",x:17,y:15,texture:"villager-c-down",intro:["PELLA: The shrine garden is full of frightened birds.","I laid out bandages beside the old lantern-stone.","I hope we will not need them."]},
+        {id:"village-dain",x:27,y:8,texture:"villager-b-down",intro:["DAIN: I have watched the east road all morning.","No traders. No riders. Not even a shepherd.","Keep your weapon close beyond the gate."]},
+        {id:"village-jun",x:12,y:17,texture:"villager-c-down",intro:["JUN: I can see Greywatch from the hill when the clouds break.","Last night there was a red light in its highest window.","Everyone says the castle is empty."]}
       ];
       this.npcs=villagers.map(n=>{
         block(n.x,n.y);
         return {...n,sprite:this.add.sprite(n.x*T+24,n.y*T+12,n.texture).setDepth(9).setScale(2)};
       });
-      this.cameras.main.setBounds(0,0,MAP_WIDTH,MAP_HEIGHT);
+      this.cameras.main.setBounds(0,0,VW*T,VH*T);
       this.cameras.main.startFollow(this.hero,true,0.18,0.18);
       this.cameras.main.setDeadzone(120,96);
       this.openDialogue([
@@ -1102,7 +1186,8 @@
         this.save.spokenVillagers = this.save.spokenVillagers || [];
         if (!this.save.spokenVillagers.includes(npc.id)) this.save.spokenVillagers.push(npc.id);
         saveGame(this.save);
-        const allSpoken = this.save.spokenVillagers.length >= 3 && !this.save.raidStarted;
+        const coreVillagers = ["village-elin","village-tomas","village-nell"];
+        const allSpoken = coreVillagers.every(id => this.save.spokenVillagers.includes(id)) && !this.save.raidStarted;
         this.openDialogue(npc.intro, allSpoken ? () => this.beginRaid() : null);
         return;
       }
