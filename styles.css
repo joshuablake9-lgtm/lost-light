@@ -1,6 +1,6 @@
 :root {
   color-scheme: dark;
-  font-family: "Silkscreen", monospace;
+  font-family: Verdana, Arial, sans-serif;
   background: #091426;
   color: #fff8dc;
 }
@@ -43,7 +43,7 @@ h1 {
   margin: 0;
   color: #fffdf2;
   font-size: clamp(27px, 5vw, 48px);
-  letter-spacing: .12em;
+  letter-spacing: .07em;
   text-transform: uppercase;
   text-shadow:
     0 3px 0 #d84d59,
@@ -53,7 +53,7 @@ h1 {
 header p {
   margin: 8px 0 14px;
   color: #9fd4e7;
-  letter-spacing: .16em;
+  letter-spacing: .06em;
   text-transform: uppercase;
   font-size: 11px;
 }
@@ -86,7 +86,7 @@ header p {
   border: 3px solid #9fd4e7;
   border-radius: 999px;
   font-size: clamp(7px, .8vw, 11px);
-  letter-spacing: .1em;
+  letter-spacing: .06em;
 }
 #game-shell::after {
   content: "";
@@ -143,7 +143,7 @@ kbd {
   margin: 10px 0 0;
   color: #86b9c9;
   font-size: 10px;
-  letter-spacing: .05em;
+  letter-spacing: .02em;
 }
 @media (max-height: 720px) {
   header { display: none; }
@@ -156,4 +156,11 @@ kbd {
   header p { display: none; }
   #game-shell { width: 98vw; padding: 7px; border-radius: 15px; }
   .controls { width: 94vw; gap: 7px 12px; }
+}
+
+/* Readability pass: heavier system glyphs stay crisp at every browser scale. */
+h1, header p, .controls, .status, kbd {
+  font-weight: 700;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: none;
 }
