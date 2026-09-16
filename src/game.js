@@ -3084,7 +3084,7 @@
 
   document.fonts.ready.then(() => new Phaser.Game({
     type: Phaser.AUTO,
-    resolution: Math.min(Math.max(window.devicePixelRatio || 1, 2), 4),
+    resolution: Math.min(Math.max((window.devicePixelRatio || 1) * 2, 4), 8),
     antialias: false,
     antialiasGL: false,
     powerPreference: "high-performance",
