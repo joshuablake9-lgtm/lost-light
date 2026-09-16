@@ -301,10 +301,16 @@
               g.fillStyle(0xffefc1).fillRect(19,19,3,6);
             }
           }
-          // Subtle facial highlights and garment seams at native pixel scale.
-          if (direction !== "up") {
-            g.fillStyle(0xf7d7a8,0.7).fillRect(direction==="side"?15:8,10,2,1);
-            g.fillStyle(0x2a3140,0.55).fillRect(8,25,8,1);
+          // High-contrast GBA highlights, face pixels and fabric shading.
+          g.fillStyle(0xffffff,0.22).fillRect(8,19,7,1);
+          g.fillStyle(0x172b45,0.55).fillRect(8,25,8,1);
+          g.fillStyle(0xf7d7a8).fillRect(direction==="side"?15:8,10,2,1);
+          if(direction!=="up") {
+            g.fillStyle(0xffffff).fillRect(direction==="side"?15:9,12,1,1);
+            if(direction!=="side") g.fillRect(14,12,1,1);
+            g.fillStyle(0x315b8a).fillRect(direction==="side"?16:10,12,1,1);
+            if(direction!=="side") g.fillRect(15,12,1,1);
+            g.fillStyle(0xffe6b8,0.85).fillRect(8,8,7,1);
           }
 
           g.generateTexture(key + "-" + direction, 24, 32);
@@ -608,74 +614,61 @@
       this.cameras.main.setBounds(0, 0, TITLE_WIDTH, TITLE_HEIGHT);
       this.mode = "title";
 
-      const bg = this.add.graphics();
-      bg.fillGradientStyle(0x101827, 0x101827, 0x243b59, 0x243b59, 1);
-      bg.fillRect(0, 0, TITLE_WIDTH / 3, TITLE_HEIGHT / 3);
-
-      // Moonlit Lantern Coast: layered silhouettes in a normalized 320×288 design grid.
-      bg.fillStyle(0xf7e6ad).fillCircle(250, 44, 20);
-      bg.fillStyle(0x243b59).fillCircle(257, 39, 19);
-      bg.fillStyle(0x31566a);
-      bg.fillTriangle(0, 198, 66, 108, 136, 198);
-      bg.fillTriangle(76, 198, 190, 82, 302, 198);
-      bg.fillTriangle(210, 198, 274, 126, 340, 198);
-      bg.fillStyle(0x1d344c);
-      bg.fillTriangle(-30, 220, 72, 142, 164, 220);
-      bg.fillTriangle(122, 220, 224, 128, 350, 220);
-
-      bg.fillStyle(0x17263b).fillRect(0, 200, TITLE_WIDTH / 3, 88);
-      bg.fillStyle(0x284c63).fillRect(0, 221, TITLE_WIDTH / 3, 67);
-      for (let x = 0; x < TITLE_WIDTH / 3; x += 24) {
-        bg.fillStyle(x % 48 ? 0x3c7181 : 0x315f75);
-        bg.fillRect(x, 230 + (x % 3) * 5, 18, 2);
-        bg.fillRect(x + 7, 250 + (x % 4) * 4, 26, 2);
+      const bg=this.add.graphics().setScale(3);
+      // Bright, saturated GBA title composition.
+      bg.fillGradientStyle(0x63c9ed,0x63c9ed,0xd9f3ef,0xd9f3ef,1).fillRect(0,0,320,288);
+      bg.fillStyle(0xfff3a6,0.55).fillCircle(254,45,35);
+      bg.fillStyle(0xfff8dc).fillCircle(254,45,23);
+      for(const [x,y] of [[20,35],[67,59],[117,29],[181,54],[298,30]]) {
+        bg.fillStyle(0xffffff,0.88).fillEllipse(x,y,31,8);
+        bg.fillEllipse(x+15,y+3,23,7);
       }
-
-      // Coastal village lights.
-      for (const house of [[28,205],[52,198],[79,210],[104,194],[130,205]]) {
-        bg.fillStyle(0x162238).fillRect(house[0], house[1], 19, 15);
-        bg.fillTriangle(house[0]-3, house[1], house[0]+10, house[1]-10, house[0]+22, house[1]);
-        bg.fillStyle(0xf4bd5f).fillRect(house[0]+5, house[1]+5, 4, 5);
+      // Emerald coast, village, lighthouse and sparkling water.
+      bg.fillStyle(0x3f8e61).fillTriangle(0,174,70,82,145,174);
+      bg.fillStyle(0x66b75d).fillTriangle(62,174,164,68,252,174);
+      bg.fillStyle(0x367a57).fillTriangle(196,174,272,101,340,174);
+      bg.fillStyle(0x8dd36a).fillTriangle(13,174,72,104,127,174);
+      bg.fillStyle(0x4b9fc4).fillRect(0,171,320,117);
+      bg.fillStyle(0x74cee0).fillRect(0,178,320,110);
+      for(let y=184;y<282;y+=14) for(let x=(y%28);x<320;x+=42) {
+        bg.fillStyle(0xe8ffff,0.75).fillRect(x,y,25,2);
+        bg.fillStyle(0x3d91c5,0.65).fillRect(x+11,y+5,32,2);
       }
-
-      // Large inn lantern focal point.
-      bg.fillStyle(0x4c2d2d).fillRect(258, 66, 8, 84);
-      bg.fillStyle(0x6f4536).fillRect(228, 65, 38, 8);
-      bg.fillStyle(0x182847).fillRect(231, 78, 31, 48);
-      bg.fillStyle(0xe6b85c).fillRect(235, 82, 23, 39);
-      bg.fillStyle(0xffefc1).fillRect(241, 87, 11, 27);
-      bg.fillStyle(0xd96b43).fillRect(245, 93, 5, 18);
-      bg.lineStyle(4, 0x182847).strokeRect(231, 78, 31, 48);
-      bg.lineBetween(246, 78, 246, 126);
-      bg.lineBetween(231, 101, 262, 101);
-
-      bg.setScale(3);
-
-      // Stars.
-      bg.fillStyle(0xffefc1);
-      [[24,32],[55,54],[91,25],[214,23],[282,31],[302,68],[184,53]].forEach(([x,y]) => {
-        bg.fillRect(x-2,y,5,1).fillRect(x,y-2,1,5);
-      });
-
-      this.text(26, 32, "LOST", 27, "#ffefc1")
-        .setShadow(3, 3, "#8b3a3a", 0, false, true);
-      this.text(26, 62, "LIGHT", 27, "#ffefc1")
-        .setShadow(3, 3, "#8b3a3a", 0, false, true);
-      this.text(28, 98, "A TALE OF THE LANTERN COAST", 8, "#b7d1b0");
-      this.text(160, 201, this.save.className ? "CONTINUE JOURNEY" : "NEW JOURNEY", 10, "#fff7d6", 0.5);
-      for (let slot = 1; slot <= SAVE_SLOT_COUNT; slot++) {
-        const selected = slot === activeSaveSlot;
-        const label = (selected ? "▶ " : "  ") + "SLOT " + slot + " · " + this.slotSummary(slot);
-        this.text(160, 218 + (slot - 1) * 17, label, 7, selected ? "#ffd166" : "#b7d1b0", 0.5);
+      for(const [x,y] of [[25,163],[50,157],[78,165],[108,151],[137,160]]) {
+        bg.fillStyle(0xfff1cb).fillRect(x,y,18,14);
+        bg.fillStyle(0xd84d59).fillTriangle(x-3,y,x+9,y-10,x+21,y);
+        bg.fillStyle(0x315b8a).fillRect(x+7,y+7,5,7);
       }
-      const prompt = this.text(160, 270, "← → SELECT   Z: PLAY", 7, "#e6b85c", 0.5);
-      if (this.save.className) {
-        this.text(160, 282, "R: ERASE SELECTED SLOT", 5, "#89a39a", 0.5);
+      bg.fillStyle(0xf6e9c8).fillRect(273,79,17,91);
+      bg.fillStyle(0xd84d59).fillRect(270,75,23,13).fillRect(273,112,17,12);
+      bg.fillStyle(0x315b8a).fillRect(268,66,27,12);
+      bg.fillStyle(0xffd85a,0.65).fillTriangle(268,72,215,95,268,84);
+      bg.fillStyle(0x172b45).fillRect(279,91,5,8).fillRect(279,135,5,8);
+
+      // Ruby-red title plaque with high-contrast outlined lettering.
+      bg.fillStyle(0x172b45,0.38).fillRect(19,24,194,79);
+      bg.fillStyle(0x793446).fillRect(15,19,194,79);
+      bg.fillStyle(0xd84d59).fillRect(12,16,194,79);
+      bg.fillStyle(0xf6a2a8).fillRect(15,19,188,7);
+      bg.lineStyle(3,0xfff8dc).strokeRect(17,21,184,69);
+      bg.fillStyle(0x315b8a).fillTriangle(182,87,224,99,199,66);
+
+      this.text(21,25,"LOST",25,"#fffdf2").setShadow(4,4,"#793446",0,false,true);
+      this.text(21,53,"LIGHT",25,"#fffdf2").setShadow(4,4,"#793446",0,false,true);
+      this.text(160,108,"THE LANTERN COAST",8,"#172b45",0.5)
+        .setBackgroundColor("#fffdf2").setPadding(10,4,10,4);
+      this.text(160,198,this.save.className?"CONTINUE JOURNEY":"NEW JOURNEY",10,"#fffdf2",0.5)
+        .setBackgroundColor("#315b8a").setPadding(12,5,12,5);
+      for(let slot=1;slot<=SAVE_SLOT_COUNT;slot++) {
+        const selected=slot===activeSaveSlot;
+        const label=(selected?"▶ ":"  ")+"SLOT "+slot+" · "+this.slotSummary(slot);
+        this.text(160,218+(slot-1)*17,label,7,selected?"#d84d59":"#172b45",0.5)
+          .setBackgroundColor(selected?"#fffdf2":"#d9f3ef").setPadding(5,2,5,2);
       }
-      this.tweens.add({
-        targets: prompt,
-        alpha: { from: 1, to: 0.35 }, duration: 650, yoyo: true, repeat: -1
-      });
+      const prompt=this.text(160,270,"← → SELECT   Z: PLAY",7,"#fffdf2",0.5)
+        .setBackgroundColor("#d84d59").setPadding(8,4,8,4);
+      if(this.save.className) this.text(160,284,"R: ERASE SLOT",5,"#172b45",0.5);
+      this.tweens.add({targets:prompt,alpha:{from:1,to:0.55},duration:650,yoyo:true,repeat:-1});
     }
 
     startGame() {
@@ -830,12 +823,13 @@
 
       this.drawFurniture(g);
       this.text(80, 4, "LOST LIGHT INN · MORNING", 6, "#ffefc1", 0.5);
+      this.applyWorldArtPass("inn",20,15);
 
       this.hero = this.add.sprite(this.heroTile.x * TILE + 24, this.heroTile.y * TILE + 12, this.getHeroTexture("down"))
-        .setDepth(10).setScale(2);
+        .setDepth(10).setScale(2.25);
 
       this.npcs = MENTORS.map(m => {
-        const sprite = this.add.sprite(m.x * TILE + 24, m.y * TILE + 12, m.id + "-down").setDepth(9).setScale(2);
+        const sprite = this.add.sprite(m.x * TILE + 24, m.y * TILE + 12, m.id + "-down").setDepth(9).setScale(2.25);
         this.blocked.add(m.x + "," + m.y);
         return { ...m, sprite };
       });
@@ -1179,7 +1173,8 @@
       this.text(80,4,"DUNMERE · LANTERN COAST",6,"#ffefc1",0.5);
       this.text(4,127,"VILLAGE SQUARE",5,"#ffd166");
       this.text(156,127,"Z: TALK",5,"#d7dfc4",1);
-      this.hero=this.add.sprite(9*T+24,5*T+12,this.getHeroTexture("down")).setDepth(10).setScale(2);
+      this.applyWorldArtPass("village",30,22);
+      this.hero=this.add.sprite(9*T+24,5*T+12,this.getHeroTexture("down")).setDepth(10).setScale(2.25);
 
       const villagers=[
         {id:"village-elin",x:7,y:7,texture:"villager-a-down",intro:["ELIN: Happy birthday!","Mara has half the village preparing your supper.","Stay near the square. Something has the gulls frightened."]},
@@ -2051,6 +2046,46 @@
       saveGame(this.save);
     }
 
+    applyWorldArtPass(theme=this.area,cols=20,rows=15) {
+      const g=this.add.graphics().setDepth(2);
+      const outdoor=["village","raid","road"].includes(theme)||theme==="chapter2"&&this.chapterTwoRoom<5;
+      const dungeon=["castle","dungeon"].includes(theme)||theme==="chapter2"&&this.chapterTwoRoom>=5;
+      // Pixel-level tile highlights, clustered details and saturated GBA color grading.
+      for(let y=0;y<rows;y++) for(let x=0;x<cols;x++) {
+        const px=x*TILE,py=y*TILE,seed=(x*29+y*43+(this.chapterTwoRoom||0)*7)%19;
+        g.fillStyle(outdoor?0xe8ffd2:0xdce8ff,outdoor?0.09:0.045).fillRect(px+3,py+3,TILE-6,2);
+        g.fillStyle(0x172b45,0.07).fillRect(px+4,py+TILE-5,TILE-8,2);
+        if(outdoor&&seed===3) {
+          g.fillStyle(0x2f7748,0.85).fillTriangle(px+8,py+39,px+13,py+25,px+17,py+39);
+          g.fillStyle(0x7bd66f,0.9).fillTriangle(px+15,py+40,px+22,py+21,px+27,py+40);
+          g.fillStyle(0xfff3a6).fillRect(px+30,py+25,4,4);
+          g.fillStyle(0xd84d59).fillRect(px+31,py+26,2,2);
+        } else if(dungeon&&seed===7) {
+          g.lineStyle(2,0x172b45,0.38).lineBetween(px+8,py+8,px+25,py+23);
+          g.lineBetween(px+25,py+23,px+18,py+39);
+          g.fillStyle(0x9fd4e7,0.16).fillRect(px+32,py+9,3,25);
+        }
+      }
+      if(outdoor) {
+        // Sun shafts and drifting pollen create the bright Route-like finish.
+        for(let x=1;x<cols;x+=4) {
+          g.fillStyle(0xfff8dc,0.055).fillTriangle(x*TILE,0,x*TILE+92,0,x*TILE+28,rows*TILE);
+        }
+        for(let i=0;i<36;i++) {
+          const x=(i*97%(cols*TILE-20))+10,y=(i*53%(rows*TILE-20))+10;
+          g.fillStyle(i%3?0xfff3a6:0xffffff,0.35).fillRect(x,y,3,3);
+        }
+      } else {
+        // Cool edge shade and pools of warm light for caves and interiors.
+        g.fillStyle(0x101b31,0.10).fillRect(0,0,cols*TILE,18);
+        g.fillStyle(0x101b31,0.10).fillRect(0,rows*TILE-18,cols*TILE,18);
+        for(let x=3;x<cols;x+=6) {
+          g.fillStyle(0xf7c84b,0.045).fillCircle(x*TILE,4*TILE,110);
+        }
+      }
+      return g;
+    }
+
     prepareCombat(area, heroX, heroY, objective) {
       this.clearScene();
       this.mode = "world";
@@ -2081,8 +2116,9 @@
     }
 
     createCombatHero() {
+      this.applyWorldArtPass(this.area,20,15);
       this.hero = this.add.sprite(this.heroTile.x * TILE + 24, this.heroTile.y * TILE + 12, this.getHeroTexture("up"))
-        .setDepth(20).setScale(2);
+        .setDepth(20).setScale(2.25);
       this.cameras.main.setBounds(0, 0, MAP_WIDTH, MAP_HEIGHT);
       this.cameras.main.startFollow(this.hero, true, 0.18, 0.18);
       this.cameras.main.setDeadzone(120, 96);
@@ -2114,7 +2150,7 @@
     spawnEnemy(id, type, x, y, hp, damage, name) {
       const enemy = {
         id, type, x, y, hp, maxHp: hp, damage, name,
-        sprite: this.add.sprite(x * TILE + 24, y * TILE + 12, type + "-down").setDepth(14).setScale(2)
+        sprite: this.add.sprite(x * TILE + 24, y * TILE + 12, type + "-down").setDepth(14).setScale(2.25)
       };
       this.enemies.push(enemy);
       this.blocked.add(x + "," + y);
