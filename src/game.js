@@ -535,6 +535,10 @@
           this.buildRaid();
           return;
         }
+        if (this.save.chapterStage === "village") {
+          this.buildVillage();
+          return;
+        }
         this.buildInn();
         this.openDialogue([
           "Morning light spills through the shutters.",
@@ -688,12 +692,12 @@
       }
     }
 
-    buildVillage() {
+    buildVillage(entry="inn") {
       this.clearScene();
       this.mode = "world";
       this.area = "village";
-      this.heroTile = { x: 9, y: 5 };
-      this.facing = { x: 0, y: 1 };
+      this.heroTile = entry === "east" ? { x: 28, y: 8 } : { x: 9, y: 5 };
+      this.facing = entry === "east" ? { x: -1, y: 0 } : { x: 0, y: 1 };
       this.blocked = new Set();
       const g = this.add.graphics();
       const T = TILE;
@@ -988,6 +992,13 @@
       for(let x=0;x<VW;x++){block(x,0);block(x,VH-1);}
       for(let y=0;y<VH;y++) block(VW-1,y);
       this.blocked.delete("9,4");
+      if (this.save.raidStarted) {
+        this.blocked.delete("29,7");
+        this.blocked.delete("29,8");
+        g.fillStyle(0x9c815d).fillRect(29*T,7*T, T,2*T);
+        g.fillStyle(0xd8bd88,0.7).fillRect(29*T,7*T+9,T,4);
+        g.fillStyle(0xd8bd88,0.7).fillRect(29*T,8*T+31,T,4);
+      }
 
       this.text(80,4,"DUNMERE · LANTERN COAST",6,"#ffefc1",0.5);
       this.text(4,127,"VILLAGE SQUARE",5,"#ffd166");
@@ -1276,10 +1287,17 @@
       if (this.area === "dungeon" && (nx === 9 || nx === 10) && ny === 0) {
         if (this.enemies.length) this.openDialogue(["The northern passage is blocked while enemies remain."]);
         else if (this.dungeonRoom < 9) this.buildDungeonRoom(this.dungeonRoom + 1,"south");
+        else if (this.save.clearedRooms.includes(9)) {
+          this.save.gameComplete=true;
+          this.save.chapterStage="complete";
+          saveGame(this.save);
+          this.showEnding();
+        }
         return;
       }
       if (this.area === "dungeon" && (nx === 9 || nx === 10) && ny === 14) {
         if (this.dungeonRoom > 0) this.buildDungeonRoom(this.dungeonRoom - 1,"north");
+        else this.buildRoad("east");
         return;
       }
       if (this.area === "inn" && nx === 9 && ny === 14) {
@@ -1289,6 +1307,29 @@
       }
       if (this.area === "village" && nx === 9 && ny === 4) {
         this.buildInn();
+        return;
+      }
+      if (this.area === "village" && nx === 30 && (ny === 7 || ny === 8)) {
+        if (!this.save.raidStarted) this.openDialogue(["The east path is quiet. Speak with Elin, Tomas, and Nell first."]);
+        else this.buildRaid("south");
+        return;
+      }
+      if (this.area === "raid" && (nx === 9 || nx === 10) && ny === 15) {
+        this.buildVillage("east");
+        return;
+      }
+      if (this.area === "raid" && (nx === 9 || nx === 10) && ny === -1) {
+        if (!this.save.raidCleared) this.openDialogue(["The Ashfangs still hold the northern path."]);
+        else this.buildRoad("west");
+        return;
+      }
+      if (this.area === "road" && nx === -1 && (ny === 7 || ny === 8)) {
+        this.buildRaid("north");
+        return;
+      }
+      if (this.area === "road" && nx === 20 && (ny === 7 || ny === 8)) {
+        if (!this.save.roadCleared) this.openDialogue(["Ashfang scouts still block the way to Greywatch."]);
+        else this.buildCastle();
         return;
       }
       if (this.blocked.has(nx + "," + ny)) return;
@@ -2108,18 +2149,22 @@
 
     beginRaid() {
       this.save.raidStarted = true;
-      this.save.chapterStage = "raid";
+      this.save.chapterStage = "village";
       this.save.playerHp = this.getClassStats().hp;
       saveGame(this.save);
+      this.blocked.delete("29,7");
+      this.blocked.delete("29,8");
       this.openDialogue([
         "A horn screams from the eastern field.",
         "Goblins pour between the houses. Smoke rises above Dunmere.",
-        "MARA: Take up your weapon! Protect the village!"
-      ], () => this.buildRaid());
+        "MARA: Take up your weapon! The east path leads to the attack!"
+      ]);
     }
 
-    buildRaid() {
-      this.prepareCombat("raid", 9, 11, "Defend Dunmere");
+    buildRaid(entry="south") {
+      this.prepareCombat("raid", 9, entry === "north" ? 2 : 12, "Defend Dunmere");
+      if (!["road","castle","complete"].includes(this.save.chapterStage)) this.save.chapterStage="raid";
+      saveGame(this.save);
       const g=this.add.graphics(),T=TILE;
       for(let y=0;y<15;y++) for(let x=0;x<20;x++) {
         g.fillStyle((x+y)%2?0x5d784c:0x688654).fillRect(x*T,y*T,T,T);
@@ -2165,14 +2210,23 @@
       for(let x=13;x<19;x++) g.fillStyle(0x8b6042).fillRect(x*T,12*T-25,5,33);
 
       this.addBoundaries();
-      [[5,6],[15,6],[6,10],[13,9]].forEach(([x,y],i)=>this.spawnEnemy("raid-"+i,"goblin",x,y,7,2,"Ashfang Goblin"));
+      this.blocked.delete("9,14");
+      this.blocked.delete("10,14");
+      if (this.save.raidCleared) {
+        this.blocked.delete("9,0");
+        this.blocked.delete("10,0");
+      } else {
+        [[5,6],[15,6],[6,10],[13,9]].forEach(([x,y],i)=>this.spawnEnemy("raid-"+i,"goblin",x,y,7,2,"Ashfang Goblin"));
+      }
       this.createCombatHero();
-      this.openDialogue(["Defend Dunmere! Face an enemy and press Z to attack."]);
+      if (!this.save.raidCleared) this.openDialogue(["Defend Dunmere! Face an enemy and press Z to attack."]);
+      else this.openDialogue(["The northern path follows the fleeing Ashfangs into the coastwood."]);
     }
 
-    buildRoad() {
-      this.prepareCombat("road", 2, 12, "Follow the raiders");
-      this.save.chapterStage="road"; this.save.playerHp=this.getClassStats().hp; saveGame(this.save);
+    buildRoad(entry="west") {
+      this.prepareCombat("road", entry === "east" ? 17 : 2, 8, "Follow the raiders");
+      if (this.save.chapterStage !== "castle") this.save.chapterStage="road";
+      this.save.playerHp=this.getClassStats().hp; saveGame(this.save);
       this.playerHp=this.playerMaxHp;
       const g=this.add.graphics(),T=TILE;
       for(let y=0;y<15;y++) for(let x=0;x<20;x++) {
@@ -2220,13 +2274,21 @@
       g.fillStyle(0xa36c42).fillRect(10*T+14,5*T+15,2*T-28,22);
       g.fillStyle(0x1f2932).fillTriangle(14*T,5*T,14*T+27,5*T+18,14*T,5*T+34);
       this.addBoundaries();
-      [[7,8],[12,7]].forEach(([x,y],i)=>this.spawnEnemy("road-"+i,"goblin",x,y,8,2,"Goblin Scout"));
-      this.spawnEnemy("road-orc","orc",16,8,12,3,"Ashfang Orc");
+      this.blocked.delete("0,7");
+      this.blocked.delete("0,8");
+      if (this.save.roadCleared) {
+        this.blocked.delete("19,7");
+        this.blocked.delete("19,8");
+      } else {
+        [[7,8],[12,7]].forEach(([x,y],i)=>this.spawnEnemy("road-"+i,"goblin",x,y,8,2,"Goblin Scout"));
+        this.spawnEnemy("road-orc","orc",16,8,12,3,"Ashfang Orc");
+      }
       this.createCombatHero();
-      this.openDialogue([
+      if (!this.save.roadCleared) this.openDialogue([
         "You follow black-fletched arrows into the old coastwood.",
         "Beyond the trees, the ruined towers of Greywatch Castle rise through the mist."
       ]);
+      else this.openDialogue(["The road east ends at Greywatch's shattered gate."]);
     }
 
     buildCastle() {
@@ -2312,8 +2374,10 @@
         g.fillStyle(room.accent).fillRect(doorX*T+5,T-8,T-10,6);
         g.fillStyle(room.accent).fillRect(doorX*T+5,14*T,T-10,6);
       }
-      if(index===0) { block(9,14,2,1); g.fillStyle(0x343b42).fillRect(9*T,14*T,2*T,T); }
-      if(index===9) { block(9,0,2,1); g.fillStyle(0x343b42).fillRect(9*T,0,2*T,T); }
+      if(index===9 && !this.save.clearedRooms.includes(9)) {
+        block(9,0,2,1);
+        g.fillStyle(0x343b42).fillRect(9*T,0,2*T,T);
+      }
       torch(1,3);torch(18,3);torch(1,11);torch(18,11);
 
       // Greywatch atmosphere: vaulted door arches, drainage channels, webs, dust and rubble.
@@ -2451,35 +2515,44 @@
     onCombatCleared() {
       this.save.playerHp=this.playerMaxHp;
       if(this.area==="raid") {
-        this.save.raidCleared=true; saveGame(this.save);
+        this.save.raidCleared=true;
+        this.blocked.delete("9,0");
+        this.blocked.delete("10,0");
+        saveGame(this.save);
         this.openDialogue([
           "The last goblin falls. Dunmere still stands.",
-          "NELL: They fled toward Greywatch. They took prisoners and supplies.",
-          "You leave at once, following the Ashfang trail."
-        ],()=>this.buildRoad());
+          "NELL: They fled north toward Greywatch with prisoners and supplies.",
+          "The northern path is now open. Follow it when you are ready."
+        ]);
       } else if(this.area==="road") {
-        this.save.roadCleared=true; saveGame(this.save);
+        this.save.roadCleared=true;
+        this.blocked.delete("19,7");
+        this.blocked.delete("19,8");
+        saveGame(this.save);
         this.openDialogue([
           "The final scout is defeated.",
           "Through the trees, Greywatch's shattered gate stands open.",
-          "You tighten your grip and enter the abandoned castle."
-        ],()=>this.buildCastle());
+          "The eastern road is clear. Walk through the gate when you are ready."
+        ]);
       } else if(this.area==="dungeon") {
         if(!Array.isArray(this.save.clearedRooms)) this.save.clearedRooms=[];
         if(!this.save.clearedRooms.includes(this.dungeonRoom)) this.save.clearedRooms.push(this.dungeonRoom);
         this.save.dungeonRoom=this.dungeonRoom;
         this.save.playerHp=this.playerHp;
-        saveGame(this.save);
         if(this.dungeonRoom===9) {
-          this.save.gameComplete=true; this.save.chapterStage="complete"; saveGame(this.save);
-          this.showEnding();
-        } else {
-          this.openDialogue([
-            "The room falls silent.",
-            "The northern passage is now clear.",
-            "Greywatch continues deeper into the rock."
-          ]);
+          this.blocked.delete("9,0");
+          this.blocked.delete("10,0");
         }
+        saveGame(this.save);
+        this.openDialogue(this.dungeonRoom===9 ? [
+          "Varkul falls. The northern door opens behind the throne.",
+          "Beyond it waits the proof of who commanded the Ashfangs.",
+          "Leave through the door when you are ready."
+        ] : [
+          "The room falls silent.",
+          "The northern passage is now clear.",
+          "Greywatch continues deeper into the rock."
+        ]);
       }
     }
 
