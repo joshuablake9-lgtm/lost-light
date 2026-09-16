@@ -138,6 +138,9 @@
       this.inventoryIndex = 0;
       this.inventoryScroll = 0;
       this.inventoryTab = 0;
+      this.shopUi = [];
+      this.shopTab = 0;
+      this.shopIndex = 0;
       this.area = "";
       this.objective = "";
       this.playerHp = 0;
@@ -1069,7 +1072,8 @@
         {id:"village-nessa",x:6,y:16,texture:"villager-a-down",intro:["NESSA: Three fishing boats came home before sunrise.","They saw torchlight moving along the northern cliffs.","Raiders do not usually carry that many banners."]},
         {id:"village-pella",x:17,y:15,texture:"villager-c-down",intro:["PELLA: The shrine garden is full of frightened birds.","I laid out bandages beside the old lantern-stone.","I hope we will not need them."]},
         {id:"village-dain",x:27,y:8,texture:"villager-b-down",intro:["DAIN: I have watched the east road all morning.","No traders. No riders. Not even a shepherd.","Keep your weapon close beyond the gate."]},
-        {id:"village-jun",x:12,y:17,texture:"villager-c-down",intro:["JUN: I can see Greywatch from the hill when the clouds break.","Last night there was a red light in its highest window.","Everyone says the castle is empty."]}
+        {id:"village-jun",x:12,y:17,texture:"villager-c-down",intro:["JUN: I can see Greywatch from the hill when the clouds break.","Last night there was a red light in its highest window.","Everyone says the castle is empty."]},
+        {id:"merchant-selda",x:15,y:8,texture:"villager-a-down",intro:["SELDA: Coin still spends, even when goblins are at the gate.","I buy equipment and valuables, and keep adventuring supplies in stock."]}
       ];
       this.npcs=villagers.map(n=>{
         block(n.x,n.y);
@@ -1246,6 +1250,11 @@
 
       if (npc.id === "innkeeper") {
         this.openDialogue(npc.intro);
+        return;
+      }
+
+      if (npc.id === "merchant-selda") {
+        this.openShopMenu();
         return;
       }
 
@@ -1460,6 +1469,7 @@
       this.ensureInventory();
       if(this.inventoryTab===0) return [
         {kind:"healing",name:"Healing Draught",count:this.save.healingDraughts,description:"Restores 8 HP plus healing bonuses. Press Z to drink."},
+        {kind:"mana",name:"Mana Potion",count:this.save.manaPotions,description:"Restores 6 MP. Only Clerics and Wizards can use it."},
         {kind:"smoke",name:"Smoke Bomb",count:this.save.smokeBombs,description:"Allows a safe escape from most battles. Used from the battle Item menu."},
         {kind:"gold",name:"Gold Coins",count:this.save.gold,description:"Currency gathered from enemies and forgotten caches."}
       ];
@@ -1585,6 +1595,15 @@
         this.save.playerHp=this.playerHp;
         saveGame(this.save);
         this.renderInventoryMenu("You drink a healing draught and restore HP.");
+      } else if(entry.kind==="mana") {
+        if(!this.playerMaxMp) return this.renderInventoryMenu("Your class does not use MP.");
+        if(this.save.manaPotions<=0) return this.renderInventoryMenu("You have no mana potions.");
+        if(this.playerMp>=this.playerMaxMp) return this.renderInventoryMenu("Your MP is already full.");
+        this.save.manaPotions--;
+        this.playerMp=Math.min(this.playerMaxMp,this.playerMp+6);
+        this.save.playerMp=this.playerMp;
+        saveGame(this.save);
+        this.renderInventoryMenu("Arcane energy returns. You restore 6 MP.");
       }
     }
 
@@ -1607,6 +1626,128 @@
       this.save.playerMp=this.playerMp;
       saveGame(this.save);
       this.renderInventoryMenu();
+    }
+
+    getShopEntries() {
+      this.ensureInventory();
+      if(this.shopTab===0) return [
+        {kind:"buy",id:"healing",name:"Healing Draught",price:10,description:"Restores 8 HP plus healing bonuses."},
+        {kind:"buy",id:"mana",name:"Mana Potion",price:12,description:"Restores 6 MP for Clerics and Wizards."},
+        {kind:"buy",id:"smoke",name:"Smoke Bomb",price:18,description:"Guarantees escape from most non-boss encounters."}
+      ];
+      const valuables=Object.entries(this.save.valuables)
+        .filter(([,count])=>count>0)
+        .map(([id,count])=>({kind:"valuable",id,count,name:VALUABLES[id].name,price:VALUABLES[id].value,description:VALUABLES[id].description}));
+      const gear=this.save.inventory.map(id=>{
+        const item=ITEMS[id];
+        const stats=(item.damage||0)*8+(item.armor||0)*10+(item.hp||0)*3+(item.mp||0)*3+(item.healing||0)*8+(item.magic||0)*8;
+        return {kind:"gear",id,item,name:item.name,price:Math.max(6,6+stats),description:item.description};
+      });
+      return [...valuables,...gear];
+    }
+
+    openShopMenu() {
+      this.ensureInventory();
+      this.mode="shop";
+      this.busy=true;
+      this.shopTab=0;
+      this.shopIndex=0;
+      this.renderShopMenu();
+    }
+
+    closeShopMenu() {
+      this.shopUi.forEach(x=>x&&x.destroy());
+      this.shopUi=[];
+      this.mode="world";
+      this.busy=false;
+    }
+
+    renderShopMenu(message="") {
+      this.shopUi.forEach(x=>x&&x.destroy());
+      this.shopUi=[];
+      const panel=this.add.graphics().setDepth(105).setScrollFactor(0);
+      panel.fillStyle(0x101827,0.99).fillRect(8,8,464,416);
+      panel.lineStyle(5,COLORS.cream).strokeRect(8,8,464,416);
+      panel.lineStyle(2,COLORS.gold).strokeRect(15,15,450,402);
+      panel.fillStyle(0x26334d).fillRect(20,55,440,44);
+      panel.fillStyle(0x182847).fillRect(20,326,440,80);
+      this.shopUi.push(panel);
+      const style=(size,color="#fff7d6")=>({
+        fontFamily:"Silkscreen, monospace",fontSize:size+"px",fontStyle:"bold",color,resolution:4
+      });
+      this.shopUi.push(
+        this.add.text(25,21,"SELDA'S MARKET",style(21,"#ffd166")).setDepth(106).setScrollFactor(0),
+        this.add.text(448,27,"GOLD "+this.save.gold,style(14,"#ffd166")).setOrigin(1,0).setDepth(106).setScrollFactor(0)
+      );
+      ["BUY","SELL"].forEach((tab,index)=>{
+        const selected=index===this.shopTab;
+        this.shopUi.push(this.add.text(index?254:87,70,(selected?"▶ ":"")+tab,
+          style(14,selected?"#ffd166":"#89a39a")).setDepth(106).setScrollFactor(0));
+      });
+      const entries=this.getShopEntries();
+      if(this.shopIndex>=entries.length) this.shopIndex=Math.max(0,entries.length-1);
+      if(!entries.length) {
+        this.shopUi.push(this.add.text(31,125,"Nothing available to sell.",style(15,"#89a39a")).setDepth(106).setScrollFactor(0));
+      } else {
+        const scrollStart=Math.max(0,Math.min(this.shopIndex-6,entries.length-7));
+        entries.slice(scrollStart,scrollStart+7).forEach((entry,row)=>{
+          const index=scrollStart+row;
+          const selected=index===this.shopIndex;
+          const suffix=entry.kind==="valuable"?" ×"+entry.count:"";
+          const equipped=entry.kind==="gear"&&this.save.equipment[entry.item.slot]===entry.id;
+          const label=(selected?"▶ ":"  ")+(equipped?"[E] ":"")+entry.name+suffix+"  "+entry.price+"G";
+          this.shopUi.push(this.add.text(31,109+row*28,label,style(13,
+            equipped?"#6f7280":(selected?"#ffd166":"#fff7d6")
+          )).setDepth(106).setScrollFactor(0));
+        });
+        const entry=entries[this.shopIndex];
+        const action=this.shopTab===0?"Z: BUY":"Z: SELL";
+        const detail=this.add.text(29,337,
+          (message||entry.description)+"\n"+(this.shopTab===0?"PRICE: ":"SELL VALUE: ")+entry.price+" GOLD\n"+
+          action+"   ← → BUY/SELL   X: CLOSE",
+          style(11,message?"#ffb09f":"#b7d1b0")).setDepth(106).setScrollFactor(0);
+        detail.setWordWrapWidth(420);
+        this.shopUi.push(detail);
+      }
+    }
+
+    moveShopCursor(direction) {
+      const entries=this.getShopEntries();
+      if(!entries.length) return;
+      this.shopIndex=(this.shopIndex+direction+entries.length)%entries.length;
+      this.renderShopMenu();
+    }
+
+    moveShopTab(direction) {
+      this.shopTab=(this.shopTab+direction+2)%2;
+      this.shopIndex=0;
+      this.renderShopMenu();
+    }
+
+    chooseShopAction() {
+      const entries=this.getShopEntries();
+      if(!entries.length) return;
+      const entry=entries[this.shopIndex];
+      if(this.shopTab===0) {
+        if(this.save.gold<entry.price) return this.renderShopMenu("You do not have enough gold.");
+        this.save.gold-=entry.price;
+        if(entry.id==="healing") this.save.healingDraughts++;
+        else if(entry.id==="mana") this.save.manaPotions++;
+        else this.save.smokeBombs++;
+        saveGame(this.save);
+        this.renderShopMenu("Purchased "+entry.name+".");
+        return;
+      }
+      if(entry.kind==="gear") {
+        if(this.save.equipment[entry.item.slot]===entry.id) return this.renderShopMenu("Remove equipped gear before selling it.");
+        this.save.inventory=this.save.inventory.filter(id=>id!==entry.id);
+      } else {
+        this.save.valuables[entry.id]--;
+      }
+      this.save.gold+=entry.price;
+      saveGame(this.save);
+      this.shopIndex=0;
+      this.renderShopMenu("Sold "+entry.name+" for "+entry.price+" gold.");
     }
 
     getClassStats() {
@@ -1895,57 +2036,39 @@
 
     enemyTurn() {
       if (this.busy || !this.enemies || !this.enemies.length) return;
-      let totalDamage = 0;
       for (const enemy of this.enemies) {
-        const distance = Math.abs(enemy.x - this.heroTile.x) + Math.abs(enemy.y - this.heroTile.y);
-        if (distance === 1) {
-          totalDamage += this.rollEnemyDamage(enemy);
-          this.tweens.add({ targets: enemy.sprite, scaleX: 2.35, scaleY: 2.35, duration: 55, yoyo: true });
-          continue;
+        let distance=Math.abs(enemy.x-this.heroTile.x)+Math.abs(enemy.y-this.heroTile.y);
+        if(distance===1) {
+          this.openBattleMenu(enemy);
+          return;
         }
-        if (distance > 6) continue;
-        const choices = [];
-        const dx = Math.sign(this.heroTile.x - enemy.x);
-        const dy = Math.sign(this.heroTile.y - enemy.y);
-        if (Math.abs(this.heroTile.x - enemy.x) >= Math.abs(this.heroTile.y - enemy.y)) {
-          choices.push([dx,0],[0,dy]);
-        } else choices.push([0,dy],[dx,0]);
-        for (const [mx,my] of choices) {
-          if (!mx && !my) continue;
-          const nx=enemy.x+mx, ny=enemy.y+my, key=nx+","+ny;
-          if (nx === this.heroTile.x && ny === this.heroTile.y) continue;
-          if (!this.blocked.has(key)) {
-            this.blocked.delete(enemy.x + "," + enemy.y);
-            enemy.x=nx; enemy.y=ny; this.blocked.add(key);
+        if(distance>6) continue;
+        const choices=[];
+        const dx=Math.sign(this.heroTile.x-enemy.x);
+        const dy=Math.sign(this.heroTile.y-enemy.y);
+        if(Math.abs(this.heroTile.x-enemy.x)>=Math.abs(this.heroTile.y-enemy.y)) choices.push([dx,0],[0,dy]);
+        else choices.push([0,dy],[dx,0]);
+        for(const [mx,my] of choices) {
+          if(!mx&&!my) continue;
+          const nx=enemy.x+mx,ny=enemy.y+my,key=nx+","+ny;
+          if(nx===this.heroTile.x&&ny===this.heroTile.y) continue;
+          if(!this.blocked.has(key)) {
+            this.blocked.delete(enemy.x+","+enemy.y);
+            enemy.x=nx;enemy.y=ny;this.blocked.add(key);
             this.tweens.add({targets:enemy.sprite,x:nx*TILE+24,y:ny*TILE+12,duration:100});
+            distance=Math.abs(nx-this.heroTile.x)+Math.abs(ny-this.heroTile.y);
+            if(distance===1) {
+              this.busy=true;
+              this.time.delayedCall(110,()=>{
+                if(this.mode==="world"&&this.enemies.includes(enemy)) this.openBattleMenu(enemy);
+                else this.busy=false;
+              });
+              return;
+            }
             break;
           }
         }
       }
-      if (totalDamage) {
-        const armor = this.getClassStats().armor;
-        let dealt = Math.max(1, totalDamage - armor);
-        if (this.guarding) {
-          dealt = Math.max(1, Math.floor(dealt / 3));
-          this.guarding = false;
-        }
-        this.playerHp -= dealt;
-        this.save.playerHp = this.playerHp;
-        saveGame(this.save);
-        this.cameras.main.flash(100, 120, 20, 20);
-        if (this.playerHp <= 0) {
-          this.playerHp = 0;
-          this.updateHud();
-          this.busy = true;
-          this.openDialogue([
-            "Your strength fails and the world goes dark.",
-            "Mara's voice calls you back from the edge.",
-            "You return to the beginning of the battle, restored."
-          ], () => this.restartCombatArea());
-          return;
-        }
-      }
-      this.updateHud();
     }
 
     combatTalk() {
@@ -1961,6 +2084,7 @@
     ensureInventory() {
       if (typeof this.save.healingDraughts !== "number") this.save.healingDraughts = 3;
       if (typeof this.save.smokeBombs !== "number") this.save.smokeBombs = 1;
+      if (typeof this.save.manaPotions !== "number") this.save.manaPotions = 0;
       if (!Array.isArray(this.save.inventory)) this.save.inventory=[];
       if (!Array.isArray(this.save.collectedLoot)) this.save.collectedLoot=[];
       if (!this.save.equipment) this.save.equipment={weapon:null,armor:null,trinket:null};
@@ -2091,23 +2215,23 @@
       this.battleUi.push(prompt);
 
       const options=this.battleMenu==="items"
-        ? ["DRAUGHT ×"+this.save.healingDraughts,"SMOKE ×"+this.save.smokeBombs,"BACK"]
+        ? ["DRAUGHT ×"+this.save.healingDraughts,"MANA ×"+this.save.manaPotions,"SMOKE ×"+this.save.smokeBombs,"BACK"]
         : ["ATTACK",this.getAbilityMenuLabel(),"ITEM","RUN"];
       const positions=this.battleMenu==="items"
-        ? [[292,329],[292,361],[292,393]]
+        ? [[292,323],[292,347],[292,371],[292,395]]
         : [[292,325],[292,348],[292,371],[292,394]];
       options.forEach((option,index)=>{
         const selected=index===this.battleIndex;
         const [x,y]=positions[index];
         const t=this.add.text(x,y,(selected?"▶ ":"  ")+option,style(
-          this.battleMenu==="items"?13:11,selected?"#ffd166":"#b7d1b0"
+          this.battleMenu==="items"?11:11,selected?"#ffd166":"#b7d1b0"
         )).setDepth(83).setScrollFactor(0);
         this.battleUi.push(t);
       });
     }
 
     moveBattleCursor(direction) {
-      const count=this.battleMenu==="items" ? 3 : 4;
+      const count=this.battleMenu==="items" ? 4 : 4;
       this.battleIndex=(this.battleIndex+direction+count)%count;
       this.renderBattleMenu();
     }
@@ -2116,7 +2240,8 @@
       if(this.battleResolving) return;
       if (this.battleMenu === "items") {
         if (this.battleIndex === 0) return this.useHealingDraught();
-        if (this.battleIndex === 1) return this.useSmokeBomb();
+        if (this.battleIndex === 1) return this.useManaPotion();
+        if (this.battleIndex === 2) return this.useSmokeBomb();
         this.battleMenu="main"; this.battleIndex=2; this.renderBattleMenu();
         return;
       }
@@ -2277,6 +2402,27 @@
       saveGame(this.save);
       this.updateHud();
       this.battleEnemyTurn("You drink a healing draught.");
+    }
+
+    useManaPotion() {
+      if (!this.playerMaxMp) {
+        this.renderBattleMenu("YOUR CLASS DOES NOT USE MP.");
+        return;
+      }
+      if (this.save.manaPotions <= 0) {
+        this.renderBattleMenu("YOU HAVE NO MANA POTIONS.");
+        return;
+      }
+      if (this.playerMp >= this.playerMaxMp) {
+        this.renderBattleMenu("YOUR MP IS ALREADY FULL.");
+        return;
+      }
+      this.save.manaPotions--;
+      this.playerMp=Math.min(this.playerMaxMp,this.playerMp+6);
+      this.save.playerMp=this.playerMp;
+      saveGame(this.save);
+      this.updateHud();
+      this.battleEnemyTurn("You drink a mana potion and restore 6 MP.");
     }
 
     useSmokeBomb() {
@@ -2796,6 +2942,16 @@
         else if (this.pressed(this.keys.right, this.keys.d)) this.moveInventoryTab(1);
         else if (this.pressed(this.keys.z, this.keys.enter, this.keys.space)) this.activateInventoryItem();
         else if (this.pressed(this.keys.x, this.keys.esc, this.keys.i)) this.closeInventoryMenu();
+        return;
+      }
+
+      if (this.mode === "shop") {
+        if (this.pressed(this.keys.up, this.keys.w)) this.moveShopCursor(-1);
+        else if (this.pressed(this.keys.down, this.keys.s)) this.moveShopCursor(1);
+        else if (this.pressed(this.keys.left, this.keys.a)) this.moveShopTab(-1);
+        else if (this.pressed(this.keys.right, this.keys.d)) this.moveShopTab(1);
+        else if (this.pressed(this.keys.z, this.keys.enter, this.keys.space)) this.chooseShopAction();
+        else if (this.pressed(this.keys.x, this.keys.esc)) this.closeShopMenu();
         return;
       }
 
