@@ -1293,6 +1293,7 @@
     }
 
     openDialogue(lines, done = null) {
+      this.hideHud();
       this.dialogue = lines;
       this.dialogueIndex = 0;
       this.dialogueDone = done;
@@ -1322,6 +1323,7 @@
       const done = this.dialogueDone;
       this.dialogueDone = null;
       if (done) done();
+      if(this.mode==="world"&&!this.dialogue) this.updateHud();
     }
 
     advanceDialogue() {
@@ -1409,6 +1411,7 @@
     }
 
     showChoice(npc) {
+      this.hideHud();
       const classInfo={
         Fighter:{
           ability:"SECOND WIND",
@@ -1466,6 +1469,7 @@
       this.pendingMentor = null;
       this.mode = "world";
       this.busy = false;
+      this.updateHud();
     }
 
     acceptClass() {
@@ -1657,6 +1661,7 @@
     }
 
     openInventoryMenu() {
+      this.hideHud();
       this.ensureInventory();
       this.mode="inventory";
       this.busy=true;
@@ -1855,6 +1860,7 @@
     }
 
     openShopMenu() {
+      this.hideHud();
       this.ensureInventory();
       this.mode="shop";
       this.busy=true;
@@ -1868,6 +1874,7 @@
       this.shopUi=[];
       this.mode="world";
       this.busy=false;
+      this.updateHud();
     }
 
     renderShopMenu(message="") {
@@ -2076,8 +2083,16 @@
       this.updateHud();
     }
 
+    hideHud() {
+      if(this.hudText) {
+        this.hudText.destroy();
+        this.hudText=null;
+      }
+    }
+
     updateHud() {
-      if (this.hudText) this.hudText.destroy();
+      this.hideHud();
+      if(this.dialogue || ["choice","inventory","shop","battle"].includes(this.mode)) return;
       if (!this.enemies || !this.enemies.length) return;
       const stats = this.getClassStats();
       this.hudText = this.text(
@@ -2352,6 +2367,7 @@
     }
 
     openBattleMenu(enemy) {
+      this.hideHud();
       this.ensureInventory();
       this.battleTarget = enemy;
       this.battleResolving = false;
@@ -2370,6 +2386,7 @@
       if (returnToWorld) {
         this.mode = "world";
         this.busy = false;
+        this.updateHud();
       }
     }
 
