@@ -1409,12 +1409,54 @@
     }
 
     showChoice(npc) {
+      const classInfo={
+        Fighter:{
+          ability:"SECOND WIND",
+          description:"Twice per enemy, recover half of your maximum HP.",
+          stats:"18 HP  ·  5 ATK  ·  2 ARMOR",
+          gear:"STARTS WITH: LONGSWORD"
+        },
+        Ranger:{
+          ability:"HUNTER'S MARK",
+          description:"Twice per enemy, deal 4 damage and mark the foe. Marked foes take +2 damage.",
+          stats:"15 HP  ·  5 ATK  ·  1 ARMOR",
+          gear:"STARTS WITH: HUNTING BOW"
+        },
+        Rogue:{
+          ability:"SNEAK ATTACK",
+          description:"Twice per enemy, strike for double your normal attack damage.",
+          stats:"14 HP  ·  6 ATK  ·  1 ARMOR",
+          gear:"STARTS WITH: TWIN KNIVES"
+        },
+        Cleric:{
+          ability:"HEALING LIGHT · 3 MP",
+          description:"Restore 7 HP. Starts with 6 MP and gains more MP when leveling.",
+          stats:"16 HP  ·  4 ATK  ·  1 ARMOR",
+          gear:"STARTS WITH: MACE"
+        },
+        Wizard:{
+          ability:"MAGIC MISSILE · 3 MP",
+          description:"Fire three unerring bolts for 12 total magic damage.",
+          stats:"12 HP  ·  7 ATK  ·  0 ARMOR",
+          gear:"STARTS WITH: OAK WAND"
+        }
+      };
+      const info=classInfo[npc.className] || classInfo.Fighter;
       this.choicePanel = this.add.graphics().setDepth(55).setScrollFactor(0).setScale(3);
-      this.choicePanel.fillStyle(COLORS.cream).fillRect(24, 45, 112, 50);
-      this.choicePanel.fillStyle(COLORS.ink).fillRect(27, 48, 106, 44);
-      this.text(80, 54, npc.className.toUpperCase(), 8, "#ffd166", 0.5).setData("choice", true);
-      this.text(80, 68, this.wrap(npc.boon, 24), 6, "#fff7d6", 0.5).setData("choice", true);
-      this.text(80, 83, "Z ACCEPT · X DECLINE", 5, "#b7d1b0", 0.5).setData("choice", true);
+      this.choicePanel.fillStyle(0x101827,0.88).fillRect(8,25,144,112);
+      this.choicePanel.fillStyle(COLORS.cream).fillRect(10,27,140,108);
+      this.choicePanel.fillStyle(COLORS.ink).fillRect(13,30,134,102);
+      this.choicePanel.lineStyle(2,npc.color,1).strokeRect(15,32,130,98);
+
+      const choiceText=(x,y,value,size,color,origin=0)=>{
+        return this.text(x,y,value,size,color,origin).setDepth(60).setData("choice",true);
+      };
+      choiceText(80,36,npc.className.toUpperCase(),9,"#ffd166",0.5);
+      choiceText(80,50,info.ability,6,"#b7d1b0",0.5);
+      choiceText(18,63,this.wrap(info.description,38),5,"#fff7d6");
+      choiceText(18,91,info.stats,5,"#ffd166");
+      choiceText(18,102,info.gear,5,"#b7d1b0");
+      choiceText(80,120,"Z: ACCEPT   X: DECLINE",5,"#ffefc1",0.5);
     }
 
     clearChoice() {
