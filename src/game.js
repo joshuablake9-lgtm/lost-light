@@ -211,78 +211,48 @@
 
           // Class-specific silhouettes and readable equipment.
           if (role === "fighter") {
-            g.fillStyle(metal).fillRect(3, 17, 5, 4).fillRect(16, 17, 5, 4);
-            g.fillStyle(COLORS.gold).fillRect(11, 20, 2, 2);
-            g.fillStyle(metal).fillRect(20, 12, 2, 13);
-            g.fillStyle(leather).fillRect(19, 22, 4, 2);
+            g.fillStyle(0x667586).fillRect(5,17,14,4);
+            g.fillStyle(COLORS.gold).fillRect(11,20,2,2);
           } else if (role === "ranger") {
-            g.fillStyle(0x31553c).fillTriangle(5, 10, 12, 3, 19, 10);
-            g.fillStyle(leather).fillRect(18, 8, 2, 18);
-            g.fillStyle(COLORS.gold).fillRect(19, 7, 1, 5).fillRect(21, 9, 1, 5);
+            g.fillStyle(0x31553c).fillTriangle(5,10,12,3,19,10);
+            g.fillStyle(0x294b39).fillTriangle(5,18,12,29,19,18);
           } else if (role === "rogue") {
-            g.fillStyle(0x453555).fillTriangle(5, 10, 12, 3, 19, 10);
-            g.fillStyle(0xc35d68).fillRect(7, 16, 10, 2);
-            g.fillStyle(metal).fillRect(2, 22, 5, 2).fillRect(17, 22, 5, 2);
+            g.fillStyle(0x453555).fillTriangle(5,10,12,3,19,10);
+            g.fillStyle(0xc35d68).fillRect(7,16,10,2);
           } else if (role === "cleric") {
-            g.fillStyle(0xf2ead0).fillRect(7, 18, 10, 7);
-            g.fillStyle(COLORS.gold).fillRect(11, 19, 2, 5).fillRect(9, 21, 6, 2);
-            g.fillStyle(COLORS.gold).fillRect(20, 12, 2, 14).fillCircle(21, 10, 4);
+            g.fillStyle(0xf2ead0).fillRect(7,18,10,8);
+            g.fillStyle(COLORS.gold).fillRect(11,19,2,5).fillRect(9,21,6,2);
           } else if (role === "wizard") {
-            g.fillStyle(0x334b85).fillTriangle(3, 8, 13, 0, 20, 8).fillRect(3, 7, 18, 3);
-            g.fillStyle(COLORS.gold).fillRect(10, 3, 2, 2).fillRect(15, 6, 2, 2);
-            g.fillStyle(0x6b432f).fillRect(20, 12, 2, 15);
-            g.fillStyle(0x65b9c7).fillCircle(21, 10, 3);
+            g.fillStyle(0x334b85).fillTriangle(3,8,13,0,20,8).fillRect(3,7,18,3);
+            g.fillStyle(COLORS.gold).fillRect(10,3,2,2).fillRect(15,6,2,2);
           } else if (role === "innkeeper") {
-            g.fillStyle(0xf2ead0).fillRect(8, 19, 8, 7);
-            g.fillStyle(COLORS.gold).fillRect(11, 21, 2, 2);
+            g.fillStyle(0xf2ead0).fillRect(8,19,8,7);
+            g.fillStyle(COLORS.gold).fillRect(11,21,2,2);
           } else {
-            g.fillStyle(COLORS.gold).fillRect(11, 20, 2, 2);
+            g.fillStyle(COLORS.gold).fillRect(11,20,2,2);
           }
 
-          if (key.startsWith("hero-") || ["fighter","ranger","rogue","cleric","wizard"].includes(role)) {
+          if (key.startsWith("hero-")) {
             if (role === "fighter") {
-              // Steel breastplate, shield boss, helmet rim and longsword.
-              g.fillStyle(0x667586).fillRect(7,18,10,6);
-              g.fillStyle(0xb8c1b7).fillRect(8,18,8,2).fillRect(11,19,2,5);
-              g.fillStyle(0xe6b85c).fillRect(10,21,4,3);
-              g.fillStyle(0x303b49).fillRect(5,6,14,3).fillRect(6,5,12,2);
-              g.fillStyle(0xa9b8b0).fillCircle(3,21,6);
-              g.fillStyle(0xe6b85c).fillCircle(3,21,2);
-              g.fillStyle(0xd8ded4).fillRect(20,9,2,16);
-              g.fillStyle(0x704536).fillRect(18,23,6,2);
+              g.fillStyle(0x536476).fillRect(7,18,10,6);
+              g.fillStyle(0xb8c1b7).fillRect(8,18,8,2);
+              g.fillStyle(0x303b49).fillRect(5,6,14,3);
             } else if (role === "ranger") {
-              // Layered forest cloak, hood, bow and visible arrow fletching.
               g.fillStyle(0x294b39).fillTriangle(5,17,12,10,19,17).fillTriangle(5,17,12,30,19,17);
               g.fillStyle(0x6f9258).fillRect(8,18,8,3);
-              g.fillStyle(0x704536).fillRect(19,7,2,20);
-              g.lineStyle(2,0xd1b06e).strokeCircle(20,17,8);
-              g.fillStyle(0xe6b85c).fillTriangle(17,6,20,2,21,8).fillTriangle(20,7,23,3,23,9);
             } else if (role === "rogue") {
-              // Deep hood, half mask, crossed belt and paired daggers.
               g.fillStyle(0x262634).fillTriangle(4,10,12,2,20,10).fillRect(5,8,14,6);
               if (direction !== "up") g.fillStyle(0x30303b).fillRect(7,13,10,4);
               g.fillStyle(0x9b4f61).fillRect(7,19,11,2);
-              g.fillStyle(0x704536).fillRect(8,17,2,9).fillRect(15,17,2,9);
-              g.fillStyle(0xc5ccc3).fillTriangle(2,19,7,20,2,24).fillTriangle(22,19,17,20,22,24);
             } else if (role === "cleric") {
-              // Ivory tabard, sunburst holy symbol, mantle and war mace.
               g.fillStyle(0xf1e6c5).fillRect(7,17,10,10);
               g.fillStyle(0xc89b4d).fillRect(11,18,2,8).fillRect(8,21,8,2);
               g.fillStyle(0xffd166).fillCircle(12,21,3);
-              g.fillStyle(0x8b5f45).fillRect(6,16,12,3);
-              g.fillStyle(0x707d82).fillRect(20,11,3,16);
-              g.fillStyle(0xb9c2b9).fillCircle(21,9,5);
-              g.fillStyle(0xe6b85c).fillCircle(21,9,2);
             } else if (role === "wizard") {
-              // Starred robe, broad pointed hat, satchel and crystal staff.
               g.fillStyle(0x293d75).fillTriangle(5,17,12,30,19,17);
               g.fillStyle(0x76558f).fillRect(6,17,12,3);
               g.fillStyle(0xffd166).fillRect(9,22,2,2).fillRect(15,25,2,2).fillRect(12,18,2,2);
               g.fillStyle(0x2c3768).fillTriangle(3,8,13,0,20,8).fillRect(2,7,20,3);
-              g.fillStyle(0xffd166).fillRect(11,3,2,2).fillRect(16,6,2,2);
-              g.fillStyle(0x6b432f).fillRect(20,10,2,18);
-              g.fillStyle(0x9ad8e1).fillTriangle(18,10,21,3,24,10);
-              g.fillStyle(0x704536).fillRect(3,19,4,6);
             }
           }
 
@@ -471,93 +441,106 @@
       this.hudText = null;
     }
 
-    drawEquippedGear(back, front) {
+    getEquipmentTextureKeys(direction="down") {
       this.ensureInventory();
       const eq=this.save.equipment || {};
-      const weapon=eq.weapon;
-      const armor=eq.armor;
-      const trinket=eq.trinket;
+      const signature=[eq.weapon||"none",eq.armor||"none",eq.trinket||"none",direction].join("-").replace(/[^a-z0-9-]/gi,"");
+      const backKey="hero-gear-back-"+signature;
+      const frontKey="hero-gear-front-"+signature;
+      if(this.textures.exists(backKey)&&this.textures.exists(frontKey)) return {backKey,frontKey};
 
-      // Back layers: mantles, quivers and larger class relics.
+      const back=this.make.graphics({add:false});
+      const front=this.make.graphics({add:false});
+      const weapon=eq.weapon,armor=eq.armor,trinket=eq.trinket;
+
+      // Everything is drawn on the character's exact native 24×32 pixel grid.
       if(armor==="captain_mantle") {
-        back.fillStyle(0x7d3541,0.95).fillTriangle(-18,-12,18,-12,0,29);
-        back.fillStyle(0xe6b85c).fillRect(-13,-12,26,4);
+        back.fillStyle(0x182847).fillTriangle(4,16,12,31,20,16);
+        back.fillStyle(0x7d3541).fillTriangle(5,16,12,29,19,16);
+        back.fillStyle(0xe6b85c).fillRect(7,16,10,2);
       }
       if(trinket==="hawk_quiver") {
-        back.fillStyle(0x5b3b2f).fillRect(-21,-19,8,34);
-        back.fillStyle(0xe6d59a).fillTriangle(-22,-22,-17,-31,-12,-22);
-        back.fillTriangle(-17,-22,-12,-31,-7,-22);
+        back.fillStyle(0x182847).fillRect(2,9,6,19);
+        back.fillStyle(0x5b3b2f).fillRect(3,10,4,17);
+        back.fillStyle(0xe6d59a).fillTriangle(2,10,4,4,6,10).fillTriangle(5,10,7,3,9,10);
       }
 
-      // Armor changes the readable silhouette.
-      if(armor==="greywatch_buckler") {
-        front.fillStyle(0x26334d).fillCircle(-19,-1,12);
-        front.fillStyle(0xa9b8b0).fillCircle(-19,-1,9);
-        front.fillStyle(0xe6b85c).fillCircle(-19,-1,3);
-      } else if(armor==="quilted_jack") {
-        front.fillStyle(0x9b704d,0.95).fillRect(-13,-12,26,23);
-        front.lineStyle(2,0xd0a86b).lineBetween(-12,-5,12,-5);
-        front.lineBetween(-12,2,12,2);
+      // Opaque armor pixels cover and replace the base torso/boot pixels.
+      if(armor==="quilted_jack") {
+        front.fillStyle(0x182847).fillRect(5,16,14,11);
+        front.fillStyle(0x9b704d).fillRect(6,17,12,9);
+        front.fillStyle(0xd0a86b).fillRect(7,18,10,2).fillRect(7,22,10,1);
+        front.fillStyle(0x704536).fillRect(11,17,2,9);
+      } else if(armor==="greywatch_buckler") {
+        front.fillStyle(0x182847).fillCircle(4,21,6);
+        front.fillStyle(0xa9b8b0).fillCircle(4,21,5);
+        front.fillStyle(0x405164).fillCircle(4,21,3);
+        front.fillStyle(0xe6b85c).fillCircle(4,21,1);
       } else if(armor==="marsh_boots") {
-        front.fillStyle(0x405642).fillRect(-14,16,11,9).fillRect(3,16,11,9);
-        front.fillStyle(0x9a7b4f).fillRect(-15,22,13,4).fillRect(2,22,13,4);
+        front.fillStyle(0x182847).fillRect(4,25,8,7).fillRect(12,25,8,7);
+        front.fillStyle(0x405642).fillRect(5,26,6,5).fillRect(13,26,6,5);
+        front.fillStyle(0x9a7b4f).fillRect(4,29,8,2).fillRect(12,29,8,2);
       }
 
-      // Equipped weapons are visible at the hero's right side.
-      if(weapon) {
-        if(weapon==="nightglass_dirk") {
-          front.fillStyle(0x4a315f).fillTriangle(16,-4,27,-17,21,2);
-          front.fillStyle(0xd9c3f0).fillRect(17,0,10,3);
-        } else if(weapon==="tempered_hatchet") {
-          front.fillStyle(0x6e4934).fillRect(19,-12,4,30);
-          front.fillStyle(0xb8c0b8).fillRect(15,-16,14,10);
-          front.fillStyle(0x626c70).fillTriangle(29,-16,36,-10,29,-6);
-        } else {
-          front.fillStyle(0xd7ded2).fillTriangle(19,-22,25,-22,22,10);
-          front.fillStyle(0x7c5a3d).fillRect(19,8,6,15);
-          front.fillStyle(0xe6b85c).fillRect(14,7,16,4);
-        }
+      // Weapons fit inside the same hand and silhouette pixels as the base sprite.
+      if(weapon==="nightglass_dirk") {
+        front.fillStyle(0xd9c3f0).fillTriangle(19,18,24,14,21,22);
+        front.fillStyle(0x4a315f).fillRect(18,21,6,2);
+        front.fillStyle(0x704536).fillRect(20,23,2,6);
+      } else if(weapon==="tempered_hatchet") {
+        front.fillStyle(0x6e4934).fillRect(20,13,2,16);
+        front.fillStyle(0xb8c0b8).fillRect(17,11,7,5);
+        front.fillStyle(0x626c70).fillTriangle(17,11,13,14,17,16);
+      } else if(weapon) {
+        front.fillStyle(0xd7ded2).fillTriangle(20,7,23,7,22,23);
+        front.fillStyle(0xe6b85c).fillRect(18,21,6,2);
+        front.fillStyle(0x704536).fillRect(20,23,3,7);
       }
 
-      // Trinkets provide a distinct colored accent.
       const trinketColors={
         saint_token:0xe8e1c7,jailer_ring:0xa9b8b0,hearth_charm:0xe87545,
         scribe_lens:0x65b9c7,dawn_reliquary:0xffd166,violet_spellshard:0xbda7ff
       };
-      if(trinketColors[trinket]) {
-        front.fillStyle(trinketColors[trinket],0.45).fillCircle(0,-3,10);
-        front.fillStyle(trinketColors[trinket]).fillCircle(0,-3,5);
-        front.fillStyle(0xffefc1).fillRect(-1,-6,2,6);
+      if(direction!=="up"&&trinketColors[trinket]) {
+        front.fillStyle(0x182847).fillCircle(12,21,3);
+        front.fillStyle(trinketColors[trinket]).fillCircle(12,21,2);
+        front.fillStyle(0xffefc1).fillRect(12,19,1,2);
       }
+
+      back.generateTexture(backKey,24,32);
+      front.generateTexture(frontKey,24,32);
+      back.destroy();
+      front.destroy();
+      return {backKey,frontKey};
     }
 
     syncHeroEquipmentVisuals() {
-      if(!this.hero || this.mode!=="world") return;
-      const eq=this.save.equipment || {};
-      const signature=[eq.weapon||"",eq.armor||"",eq.trinket||""].join("|");
+      if(!this.hero||this.mode!=="world") return;
+      const eq=this.save.equipment||{};
+      const direction=this.facing.y<0?"up":(this.facing.x!==0?"side":"down");
+      const signature=[eq.weapon||"",eq.armor||"",eq.trinket||"",direction].join("|");
       const active=this.heroGearVisuals.length&&this.heroGearVisuals.every(x=>x&&x.active);
-      if(this.heroGearOwner!==this.hero || this.heroGearSignature!==signature || !active) {
+      if(this.heroGearOwner!==this.hero||this.heroGearSignature!==signature||!active) {
         this.heroGearVisuals.forEach(x=>x&&x.destroy());
-        const back=this.add.graphics().setDepth((this.hero.depth||10)-1);
-        const front=this.add.graphics().setDepth((this.hero.depth||10)+1);
-        this.drawEquippedGear(back,front);
+        const keys=this.getEquipmentTextureKeys(direction);
+        const back=this.add.sprite(this.hero.x,this.hero.y,keys.backKey).setDepth((this.hero.depth||10)-1);
+        const front=this.add.sprite(this.hero.x,this.hero.y,keys.frontKey).setDepth((this.hero.depth||10)+1);
         this.heroGearVisuals=[back,front];
         this.heroGearOwner=this.hero;
         this.heroGearSignature=signature;
       }
-      const mirror=this.hero.flipX?-1:1;
+      const scaleX=Math.abs(this.hero.scaleX||2)*(this.hero.flipX?-1:1);
+      const scaleY=Math.abs(this.hero.scaleY||2);
       this.heroGearVisuals.forEach(layer=>{
         layer.setPosition(this.hero.x,this.hero.y);
-        layer.setScale(mirror,1);
+        layer.setScale(scaleX,scaleY);
       });
     }
 
     addBattleEquipmentVisuals() {
-      const back=this.add.graphics().setDepth(81).setScrollFactor(0);
-      const front=this.add.graphics().setDepth(84).setScrollFactor(0);
-      this.drawEquippedGear(back,front);
-      back.setPosition(112,236).setScale(2.35);
-      front.setPosition(112,236).setScale(2.35);
+      const keys=this.getEquipmentTextureKeys("up");
+      const back=this.add.sprite(112,236,keys.backKey).setDepth(81).setScrollFactor(0).setScale(5.2);
+      const front=this.add.sprite(112,236,keys.frontKey).setDepth(84).setScrollFactor(0).setScale(5.2);
       this.battleUi.push(back,front);
     }
 
